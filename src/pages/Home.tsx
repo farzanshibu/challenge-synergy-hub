@@ -6,11 +6,9 @@ import ChallengeList from "@/components/challenges/ChallengeList";
 import ChallengeForm from "@/components/challenges/ChallengeForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
 import { useAppSettings } from "@/store/appSettingStore";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
-
+import { toast } from "sonner";
 export default function Home() {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
   const { isModernUI } = useAppSettings();
@@ -19,44 +17,37 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to access this page",
-        variant: "destructive",
-      });
+      toast("Please sign in to access this page");
       navigate("/login");
     }
   }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading || !isAuthenticated) {
-    return (
-      isModernUI ? (
-        <BackgroundGradientAnimation interactive={false}>
-          <Navbar />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
-              <div className="h-4 w-32 rounded bg-zinc-800"></div>
-            </div>
-          </div>
-        </BackgroundGradientAnimation>
-      ) : (
-        <div className="min-h-screen bg-zinc-950 flex flex-col">
-          <Navbar />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
-              <div className="h-4 w-32 rounded bg-zinc-800"></div>
-            </div>
+    return isModernUI ? (
+      <BackgroundGradientAnimation interactive={false}>
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
+            <div className="h-4 w-32 rounded bg-zinc-800"></div>
           </div>
         </div>
-      )
+      </BackgroundGradientAnimation>
+    ) : (
+      <div className="min-h-screen bg-zinc-950 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
+            <div className="h-4 w-32 rounded bg-zinc-800"></div>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  return (
-    isModernUI ? (
-      <BackgroundGradientAnimation interactive={false}>
+  return isModernUI ? (
+    <BackgroundGradientAnimation interactive={false}>
       <Navbar />
       <main className="flex-1 container mx-auto max-w-4xl p-4 pt-24 md:p-8 md:pt-24">
         <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-zinc-800/5 shadow-xl animate-fade-in">
@@ -126,10 +117,10 @@ export default function Home() {
           </div>
         </div>
       </main>
-    </BackgroundGradientAnimation>)
-    : (
-      <div className="min-h-screen bg-zinc-950 flex flex-col">
-        <Navbar />
+    </BackgroundGradientAnimation>
+  ) : (
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
+      <Navbar />
       <main className="flex-1 container mx-auto max-w-4xl p-4 pt-24 md:p-8 md:pt-24">
         <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-zinc-800/5 shadow-xl animate-fade-in">
           <div className="p-6">
@@ -199,6 +190,5 @@ export default function Home() {
         </div>
       </main>
     </div>
-    )
   );
 }

@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Upload } from "lucide-react";
+import { CalendarIcon, Info, UploadIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useChallengeStore } from "@/store/challengeStore";
 import { useOverlaySettingsStore } from "@/store/overlaySettingsStore";
@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -41,6 +41,7 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
+import { Textarea } from "../ui/textarea";
 
 export default function ChallengeForm() {
   const { loading, addChallenge } = useChallengeStore();
@@ -54,6 +55,7 @@ export default function ChallengeForm() {
       position_y: settings?.position_y ?? 10,
       width: settings?.width ?? 20,
       height: settings?.height ?? 10,
+      react_code: "",
       confetti_enabled: settings?.confetti_enabled ?? true,
       sound_enabled: settings?.sound_enabled ?? true,
       sound_type: settings?.sound_type || {
@@ -82,77 +84,65 @@ export default function ChallengeForm() {
 
   const onSubmit = async (values: FormValues) => {
     if (values.currentValue >= values.maxValue) {
-      toast({
-        title: "Invalid values",
-        description: "Current value cannot be greater than max value",
-        variant: "destructive",
-      });
+      toast.info("Current value cannot be greater than max value");
       return;
     }
 
     if (values.maxValue < 0 || values.currentValue < 0) {
-      toast({
-        title: "Invalid values",
-        description: "Values cannot be negative",
-        variant: "destructive",
-      });
+      toast.error("Values cannot be negative");
       return;
     }
 
-    try {
-      // Extract challenge form values for addChallenge
-      const challengeValues: FormValues = {
-        title: values.title,
-        currentValue: values.currentValue,
-        maxValue: values.maxValue,
-        endDate: values.endDate,
-        is_active: values.is_active,
-      };
+    await toast.promise(
+      (async () => {
+        // Extract challenge form values for addChallenge
+        const challengeValues: FormValues = {
+          title: values.title,
+          currentValue: values.currentValue,
+          maxValue: values.maxValue,
+          endDate: values.endDate,
+          is_active: values.is_active,
+        };
 
-      const challenge = await addChallenge(challengeValues);
+        const challenge = await addChallenge(challengeValues);
 
-      // Get overlay settings values from the overlayForm
-      const overlayValues = overlayForm.getValues();
+        // Get overlay settings values from the overlayForm
+        const overlayValues = overlayForm.getValues();
 
-      // Prepare sound_type and confetti_type as JSON objects for database
-      const settingsToSave = {
-        position_x: overlayValues.position_x,
-        position_y: overlayValues.position_y,
-        width: overlayValues.width,
-        height: overlayValues.height,
-        confetti_enabled: overlayValues.confetti_enabled,
-        sound_enabled: overlayValues.sound_enabled,
-        sound_type: {
-          increment_url: overlayValues.sound_type?.increment_url ?? null,
-          decrement_url: overlayValues.sound_type?.decrement_url ?? null,
-          reset_url: overlayValues.sound_type?.reset_url ?? null,
-        },
-        confetti_type: {
-          increment_url: overlayValues.confetti_type?.increment_url ?? null,
-          decrement_url: overlayValues.confetti_type?.decrement_url ?? null,
-          reset_url: overlayValues.confetti_type?.reset_url ?? null,
-        },
-        challenge_id: challenge,
-      };
+        // Prepare sound_type and confetti_type as JSON objects for database
+        const settingsToSave = {
+          position_x: overlayValues.position_x,
+          position_y: overlayValues.position_y,
+          width: overlayValues.width,
+          height: overlayValues.height,
+          react_code: overlayValues.react_code,
+          confetti_enabled: overlayValues.confetti_enabled,
+          sound_enabled: overlayValues.sound_enabled,
+          sound_type: {
+            increment_url: overlayValues.sound_type?.increment_url ?? null,
+            decrement_url: overlayValues.sound_type?.decrement_url ?? null,
+            reset_url: overlayValues.sound_type?.reset_url ?? null,
+          },
+          confetti_type: {
+            increment_url: overlayValues.confetti_type?.increment_url ?? null,
+            decrement_url: overlayValues.confetti_type?.decrement_url ?? null,
+            reset_url: overlayValues.confetti_type?.reset_url ?? null,
+          },
+          challenge_id: challenge,
+        };
 
-      // Save overlay settings
-      await saveSettings(settingsToSave);
+        // Save overlay settings
+        await saveSettings(settingsToSave);
 
-      form.reset();
-      overlayForm.reset();
-
-      toast({
-        title: "Challenge created",
-        description: "Your challenge has been created successfully",
-      });
-    } catch (error) {
-      console.error("Error adding challenge:", error);
-      toast({
-        title: "Error creating challenge",
-        description: "There was a problem creating your challenge",
-        variant: "destructive",
-      });
-    }
+        form.reset();
+        overlayForm.reset();
+      })(),
+      {
+        loading: "Creating challenge...",
+        success: "Challenge created successfully.",
+        error: "There was a problem creating your challenge.",
+      }
+    );
   };
 
   return (
@@ -460,15 +450,15 @@ export default function ChallengeForm() {
                           ].map((position, index) => {
                             const row = Math.floor(index / 3);
                             const col = index % 3;
-                            const posX = col === 0 ? 10 : col === 1 ? 50 : 90;
-                            const posY = row === 0 ? 10 : row === 1 ? 50 : 90;
+                            const posX = col === 0 ? 5 : col === 1 ? 50 : 90;
+                            const posY = row === 0 ? 5 : row === 1 ? 50 : 90;
 
                             // Check if this position is currently selected
                             const isSelected =
                               Math.abs(overlayForm.watch("position_x") - posX) <
-                                10 &&
+                                5 &&
                               Math.abs(overlayForm.watch("position_y") - posY) <
-                                10;
+                                5;
 
                             return (
                               <button
@@ -773,6 +763,7 @@ export default function ChallengeForm() {
                         });
                       }}
                     >
+                      <UploadIcon className="h-4 w-4" />
                       Add Custom Type
                     </Button>
                   </div>
@@ -943,6 +934,83 @@ export default function ChallengeForm() {
                       )}
                     />
                   </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-zinc-100">
+                    Custom Overlay Code
+                  </h3>
+                  <FormField
+                    control={overlayForm.control}
+                    name="react_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="text-zinc-100">
+                            Custom React Code
+                          </FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Info className="h-4 w-4 text-zinc-400" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 bg-zinc-900 border-zinc-700">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-zinc-100">
+                                  Available Variables
+                                </h4>
+                                <p className="text-sm text-zinc-400">
+                                  Use these variables in your custom React code:
+                                </p>
+                                <ul className="list-disc list-inside text-sm text-zinc-400">
+                                  <li>
+                                    <code>challenge</code>: {"{"} id, title,
+                                    currentValue, maxValue, minValue, endDate{" "}
+                                    {"}"}
+                                  </li>
+                                  <li>
+                                    <code>settings</code>: {"{"} position_x,
+                                    position_y, width, height, ... {"}"}
+                                  </li>
+                                </ul>
+                                <p className="text-sm text-zinc-400">
+                                  Example:
+                                </p>
+                                <pre className="bg-zinc-800 p-2 rounded text-sm text-zinc-300 overflow-scroll">
+                                  {`return (
+  <div>
+    <h2>{challenge.title}</h2>
+    <p>Progress: {challenge.currentValue} / {challenge.maxValue}</p>
+    <p>Ends: {challenge.endDate.toLocaleDateString()}</p>
+  </div>
+);`}
+                                </pre>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <FormControl>
+                          <Textarea
+                            className="bg-zinc-900 border-zinc-700 text-zinc-100 min-h-[200px]"
+                            placeholder="Enter your custom React code here"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-zinc-400">
+                          Write custom React code to render the overlay. Use the
+                          info button to see available variables.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -36,7 +36,8 @@ export default function ActionButton({ id }: ActionButtonProps) {
   const { challenges, updateChallenge, deleteChallenge, setActiveChallenge } =
     useChallengeStore();
   const [isOverlaySettingsOpen, setIsOverlaySettingsOpen] = useState(false);
-  const { settings, saveSettings } = useOverlaySettingsStore();
+  const { settings, saveSettings, fetchSettingsAll } =
+    useOverlaySettingsStore();
   const challenge = challenges.find((c) => c.id === id);
 
   if (!challenge) return null;
@@ -57,8 +58,17 @@ export default function ActionButton({ id }: ActionButtonProps) {
   };
 
   const handleUpdateOverlay = async (settingsData: any) => {
+    // fetch all overlay setting
+    const overlaySettings = await fetchSettingsAll();
+    // Find the overlay for this challenge
+    const overlay = overlaySettings.find((s) => s.challenge_id === id);
+
     try {
-      await saveSettings({ ...settingsData, challenge_id: id });
+      await saveSettings({
+        ...settingsData,
+        challenge_id: id,
+        id: overlay.id,
+      });
       setIsOverlaySettingsOpen(false);
     } catch (error) {
       console.error("Error saving overlay settings:", error);
@@ -213,11 +223,11 @@ const OverlaySettingsModal = ({
                   ].map((position, index) => {
                     const row = Math.floor(index / 3);
                     const col = index % 3;
-                    const posX = col === 0 ? 10 : col === 1 ? 50 : 90;
-                    const posY = row === 0 ? 10 : row === 1 ? 50 : 90;
+                    const posX = col === 0 ? 5 : col === 1 ? 50 : 90;
+                    const posY = row === 0 ? 5 : row === 1 ? 50 : 90;
                     const isSelected =
-                      Math.abs(localSettings.position_x - posX) < 10 &&
-                      Math.abs(localSettings.position_y - posY) < 10;
+                      Math.abs(localSettings.position_x - posX) < 5 &&
+                      Math.abs(localSettings.position_y - posY) < 5;
 
                     return (
                       <button

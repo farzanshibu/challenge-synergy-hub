@@ -150,6 +150,41 @@ export default {
 					  transform: "translateY(-50%)",
 					},
 				  },
+				  shake: {
+					"0%": {
+					  transform: "translateX(0)",
+					},
+					"10%": {
+					  transform: "translateX(-5px)",
+					},
+					"20%": {
+					  transform: "translateX(5px)",
+					},
+					"30%": {
+					  transform: "translateX(-5px)",
+					},
+					"40%": {
+					  transform: "translateX(5px)",
+					},
+					"50%": {
+					  transform: "translateX(-5px)",
+					},
+					"60%": {
+					  transform: "translateX(5px)",
+					},
+					"70%": {
+					  transform: "translateX(-5px)",
+					},
+					"80%": {
+					  transform: "translateX(-5px)",
+					},
+					"90%": {
+					  transform: "translateX(5px)",
+					},
+					"100%": {
+					  transform: "translateX(0)",
+					},
+				  },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -165,6 +200,8 @@ export default {
 				'third': "moveInCircle 40s linear infinite",
 				'fourth': "moveHorizontal 40s ease in	finite",
 				'fifth': "moveInCircle 20s ease infinite",
+				'skaker': "shake 0.7s ease infinite"
+				
 			},
 			backdropFilter: {
 				'none': 'none',
@@ -179,5 +216,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"),require('tailwindcss-motion')],
 } satisfies Config;

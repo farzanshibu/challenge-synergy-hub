@@ -132,3 +132,35 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
+.shake {
+  animation: shake 0.7s infinite;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(-5px); }
+  20% { transform: translateX(5px); }
+  30% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  50% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  70% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+  90% { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+@theme {
+  --animate-wiggle: wiggle 1s ease-in-out infinite;
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-3deg) translateX(-4px) translateY(3px);
+      text-shadow: 0 0 20px #fff;
+    }
+    50% {
+      transform: rotate(5deg) translateX(5px) translateY(-5px);
+      text-shadow: 0 0 0px #fff;
+    }
+  }
+}

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -28,21 +27,24 @@ export interface OverlaySettings {
   challenge_id: number | null;
 }
 
-
 interface OverlaySettingsState {
   loading: boolean;
   settings: OverlaySettings | null;
   defaultSettings: {
     react_code: string;
   };
-  
+
   // Actions
   fetchSettings: () => Promise<void>;
+  fetchSettingsAll: () => Promise<OverlaySettings[]> ;
   saveSettings: (settings: Partial<OverlaySettings>) => Promise<void>;
-  uploadConfetti: (file: File, type: 'increment' | 'decrement' |'reset') => Promise<string>;
+  uploadConfetti: (file: File, type: 'increment' | 'decrement' | 'reset') => Promise<string>;
   uploadAudio: (file: File, type: 'increment' | 'decrement' | 'reset') => Promise<string>;
   deleteAudio: (type: 'increment' | 'decrement' | 'reset') => Promise<void>;
   resetToDefaults: () => Promise<void>;
+
+    // Subscription
+    subscribeToOverlayChanges: () => () => void;
 }
 
 export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) => ({
@@ -51,7 +53,7 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
   defaultSettings: {
     react_code: '',
   },
-  
+
   fetchSettings: async () => {
     set({ loading: true });
     try {
@@ -59,19 +61,19 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const { data, error } = await supabase
         .from('overlay_settings')
         .select('*')
         .eq('user_id', session.session.user.id)
         .maybeSingle();
-        
+
       if (error) throw error;
-      
+
       if (data) {
-        set({ 
+        set({
           settings: data as OverlaySettings,
-          loading: false 
+          loading: false
         });
       } else {
         // No settings found, create default settings
@@ -82,7 +84,32 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       set({ loading: false });
     }
   },
+
+  fetchSettingsAll: async () => {
+    set({ loading: true });
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
   
+      const { data, error } = await supabase
+        .from('overlay_settings')
+        .select('*')
+        .eq('user_id', session.session.user.id);
+  
+      if (error) throw error;
+  
+      set({ loading: false });
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching overlay settings:', error.message);
+      set({ loading: false });
+      return [];
+    }
+  },
+  
+
   saveSettings: async (settings: Partial<OverlaySettings>) => {
     set({ loading: true });
     try {
@@ -90,11 +117,12 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const userId = session.session.user.id;
-      const currentSettings = get().settings;
-      
-      if (!currentSettings) {
+      // Check if an ID is provided in the incoming settings or already exists in store
+      const idToUse = settings.id ?? get().settings?.id;
+
+      if (!idToUse) {
         // Create new settings
         const { data, error } = await supabase
           .from('overlay_settings')
@@ -120,32 +148,32 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
             user_id: userId
           }])
           .select();
-          
+
         if (error) throw error;
-        
-        set({ 
+
+        set({
           settings: data[0] as OverlaySettings,
-          loading: false 
+          loading: false
         });
       } else {
-        // Update existing settings
+        // Update existing settings using the provided or stored id
         const { data, error } = await supabase
           .from('overlay_settings')
           .update({
             ...settings,
             updated_at: new Date().toISOString()
           })
-          .eq('id', currentSettings.id)
+          .eq('id', idToUse)
           .select();
-          
+
         if (error) throw error;
-        
-        set({ 
+
+        set({
           settings: data[0] as OverlaySettings,
-          loading: false 
+          loading: false
         });
       }
-      
+
       toast({
         title: "Settings saved",
         description: "Your overlay settings have been updated successfully"
@@ -160,18 +188,18 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       set({ loading: false });
     }
   },
-  
+
   uploadAudio: async (file: File, type: 'increment' | 'decrement' | 'reset') => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const userId = session.session.user.id;
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${type}_sound.${fileExt}`;
-      
+
       const { data, error } = await supabase
         .storage
         .from('overlay_assets')
@@ -179,16 +207,16 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
           upsert: true,
           contentType: file.type
         });
-        
+
       if (error) throw error;
-      
+
       const { data: urlData } = supabase
         .storage
         .from('overlay_assets')
         .getPublicUrl(fileName);
-        
+
       const publicUrl = urlData.publicUrl;
-      
+
       // Get current settings
       const currentSettings = get().settings;
       const currentSoundType = currentSettings?.sound_type || {
@@ -196,16 +224,16 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
         decrement_url: null,
         reset_url: null
       };
-      
+
       // Update the sound_type object with the new URL
       const updatedSoundType = {
         ...currentSoundType,
         [`${type}_url`]: publicUrl
       };
-      
+
       // Save the updated sound_type object
       await get().saveSettings({ sound_type: updatedSoundType });
-      
+
       return publicUrl;
     } catch (error: any) {
       console.error(`Error uploading ${type} sound:`, error.message);
@@ -217,17 +245,18 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       throw error;
     }
   },
-uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') => {
+
+  uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const userId = session.session.user.id;
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${type}_confetti.${fileExt}`;
-      
+
       const { data, error } = await supabase
         .storage
         .from('overlay_assets')
@@ -235,16 +264,16 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
           upsert: true,
           contentType: file.type
         });
-        
+
       if (error) throw error;
-      
+
       const { data: urlData } = supabase
         .storage
         .from('overlay_assets')
         .getPublicUrl(fileName);
-        
+
       const publicUrl = urlData.publicUrl;
-      
+
       // Get current settings
       const currentSettings = get().settings;
       const currentConfettiType = currentSettings?.confetti_type || {
@@ -252,16 +281,16 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
         decrement_url: null,
         reset_url: null
       };
-      
+
       // Update the confetti_type object with the new URL
       const updatedConfettiType = {
         ...currentConfettiType,
         [`${type}_url`]: publicUrl
       };
-      
+
       // Save the updated confetti_type object
       await get().saveSettings({ confetti_type: updatedConfettiType });
-      
+
       return publicUrl;
     } catch (error: any) {
       console.error(`Error uploading ${type} confetti:`, error.message);
@@ -280,45 +309,45 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const userId = session.session.user.id;
       const settings = get().settings;
-      
+
       if (!settings) {
         throw new Error("No settings found");
       }
-      
+
       // Get the file path from the URL
       const soundUrl = settings.sound_type?.[`${type}_url`] as string | null;
-      
+
       if (soundUrl) {
         // Extract filename from URL
         const filePath = `${userId}/${type}_sound.${soundUrl.split('.').pop()}`;
-        
+
         // Delete from storage
         const { error: deleteError } = await supabase
           .storage
           .from('overlay_assets')
           .remove([filePath]);
-          
+
         if (deleteError) throw deleteError;
       }
-      
+
       // Update the sound_type object to remove the URL
       const currentSoundType = settings.sound_type || {
         increment_url: null,
         decrement_url: null,
         reset_url: null
       };
-      
+
       const updatedSoundType = {
         ...currentSoundType,
         [`${type}_url`]: null
       };
-      
+
       // Save the updated sound_type object
       await get().saveSettings({ sound_type: updatedSoundType });
-      
+
       toast({
         title: "Sound removed",
         description: `The ${type} sound has been removed successfully`
@@ -332,7 +361,27 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
       });
     }
   },
-  
+
+  subscribeToOverlayChanges: () => {
+    // Subscribe to realtime changes
+    const subscription = supabase
+      .channel('public:overlay_settings')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'overlay_settings', 
+      }, async (payload) => {
+        // Refresh challenges on change
+        await get().fetchSettings();
+      })
+      .subscribe();
+    
+    // Return unsubscribe function
+    return () => {
+      subscription.unsubscribe();
+    };
+  },
+
   resetToDefaults: async () => {
     set({ loading: true });
     try {
@@ -340,17 +389,17 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
       if (!session.session) {
         throw new Error("Not authenticated");
       }
-      
+
       const userId = session.session.user.id;
       const defaults = get().defaultSettings;
-      
+
       // Check if settings exist
       const { data: existingSettings } = await supabase
         .from('overlay_settings')
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       if (existingSettings) {
         // Update existing settings
         const { data, error } = await supabase
@@ -377,12 +426,12 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
           })
           .eq('id', existingSettings.id)
           .select();
-          
+
         if (error) throw error;
-        
-        set({ 
+
+        set({
           settings: data[0] as OverlaySettings,
-          loading: false 
+          loading: false
         });
       } else {
         // Create new settings with defaults
@@ -409,15 +458,15 @@ uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') =>
             user_id: userId
           }])
           .select();
-          
+
         if (error) throw error;
-        
-        set({ 
+
+        set({
           settings: data[0] as OverlaySettings,
-          loading: false 
+          loading: false
         });
       }
-      
+
       toast({
         title: "Settings reset",
         description: "Your overlay settings have been reset to defaults"

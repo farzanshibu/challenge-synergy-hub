@@ -14,7 +14,8 @@ export default function Overlay() {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
   const { challenges, fetchChallenges, subscribeToChanges } =
     useChallengeStore();
-  const { settings, fetchSettings } = useOverlaySettingsStore();
+  const { settings, fetchSettings, subscribeToOverlayChanges } =
+    useOverlaySettingsStore();
   const [showControls, setShowControls] = useState(false);
   const [previousValues, setPreviousValues] = useState<Record<number, number>>(
     {}
@@ -26,23 +27,32 @@ export default function Overlay() {
   // Get active challenges
   const activeChallenges = challenges.filter((c) => c.is_active);
 
+  // Initial load for challenges and settings, and subscribe to challenge updates
   useEffect(() => {
-    // Initial load
     if (isAuthenticated) {
       fetchChallenges();
       fetchSettings();
     }
 
-    // Subscribe to updates
     let unsubscribe: (() => void) | undefined;
     if (isAuthenticated) {
       unsubscribe = subscribeToChanges();
     }
-
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, [isAuthenticated, fetchChallenges, fetchSettings, subscribeToChanges]);
+
+  // Subscribe to overlay settings changes for realtime updates
+  useEffect(() => {
+    let unsubscribeOverlay: (() => void) | undefined;
+    if (isAuthenticated) {
+      unsubscribeOverlay = subscribeToOverlayChanges();
+    }
+    return () => {
+      if (unsubscribeOverlay) unsubscribeOverlay();
+    };
+  }, [isAuthenticated, subscribeToOverlayChanges]);
 
   // Toggle controls visibility on key press
   useEffect(() => {
@@ -51,9 +61,7 @@ export default function Overlay() {
         setShowControls((prev) => !prev);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -67,20 +75,16 @@ export default function Overlay() {
       if (settings.sound_type.increment_url) {
         players.increment = new Audio(settings.sound_type.increment_url);
       }
-
       if (settings.sound_type.decrement_url) {
         players.decrement = new Audio(settings.sound_type.decrement_url);
       }
-
       if (settings.sound_type.reset_url) {
         players.reset = new Audio(settings.sound_type.reset_url);
       }
-
       setAudioPlayers(players);
     }
   }, [settings]);
 
-  // Track value changes and play sounds/animations
   useEffect(() => {
     if (!settings || challenges.length === 0) return;
 
@@ -90,26 +94,17 @@ export default function Overlay() {
 
     challenges.forEach((challenge) => {
       updatedValues[challenge.id] = challenge.currentValue;
-
-      // Check if this is a value change
       if (
         previousValues[challenge.id] !== undefined &&
         previousValues[challenge.id] !== challenge.currentValue
       ) {
         valueChanged = true;
-
-        // Determine action type
         if (challenge.currentValue > previousValues[challenge.id]) {
           actionType = "increment";
         } else if (challenge.currentValue < previousValues[challenge.id]) {
-          if (challenge.currentValue === 0) {
-            actionType = "reset";
-          } else {
-            actionType = "decrement";
-          }
+          actionType = challenge.currentValue === 0 ? "reset" : "decrement";
         }
 
-        // Play confetti for all milestone changes
         if (settings.confetti_enabled) {
           const milestone = Math.ceil(challenge.maxValue / 10);
           if (
@@ -129,7 +124,6 @@ export default function Overlay() {
       }
     });
 
-    // Play sound if enabled and available
     if (valueChanged && actionType && settings.sound_enabled) {
       const player = audioPlayers[actionType];
       if (player) {
@@ -140,8 +134,18 @@ export default function Overlay() {
       }
     }
 
-    setPreviousValues(updatedValues);
-  }, [challenges, settings, audioPlayers]);
+    // Check for differences before updating previousValues
+    const isEqual =
+      Object.keys(updatedValues).length ===
+        Object.keys(previousValues).length &&
+      Object.keys(updatedValues).every(
+        (key) => updatedValues[Number(key)] === previousValues[Number(key)]
+      );
+
+    if (!isEqual) {
+      setPreviousValues(updatedValues);
+    }
+  }, [challenges, settings, audioPlayers, previousValues]);
 
   // Play confetti animation
   const playConfetti = (type: "increment" | "decrement" | "reset") => {
@@ -152,7 +156,6 @@ export default function Overlay() {
       zIndex: 1000,
     };
 
-    // Check for custom confetti animation URL
     if (settings?.confetti_type?.[`${type}_url`]) {
       confetti({
         ...defaults,
@@ -162,7 +165,6 @@ export default function Overlay() {
       return;
     }
 
-    // Default animations based on action type
     switch (type) {
       case "increment":
         confetti({
@@ -172,7 +174,6 @@ export default function Overlay() {
           colors: ["#00ff00", "#4CAF50", "#45B649"],
         });
         break;
-
       case "decrement":
         confetti({
           ...defaults,
@@ -181,9 +182,7 @@ export default function Overlay() {
           colors: ["#ff9800", "#f44336", "#ffeb3b"],
         });
         break;
-
       case "reset":
-        // Fireworks effect for reset
         confetti({
           ...defaults,
           particleCount: 100,
@@ -240,21 +239,34 @@ export default function Overlay() {
     ) : null;
   }
 
-  // Use custom styles if available, otherwise fall back to default
+  // Use custom styles if available, with custom React code or default rendering
   if (settings) {
-    // Evaluate custom React code if provided
-    const CustomComponent = settings?.react_code
-      ? eval(`(${settings.react_code})`)
-      : null;
+    let CustomComponent = null;
+    if (settings.react_code) {
+      try {
+        CustomComponent = eval(`(${settings.react_code})`);
+      } catch (error) {
+        console.error("Error evaluating react_code:", error);
+        // Fallback to default rendering by keeping CustomComponent as null
+      }
+    }
+
+    const widthPercent = settings?.width ?? 10;
+    const heightPercent = settings?.height ?? 7;
+    const posX = settings?.position_x ?? 0;
+    const posY = settings?.position_y ?? 0;
+
+    const adjustedLeft = Math.min(posX, 115 - widthPercent); // Ensure right edge stays within 100%
+    const adjustedTop = Math.min(posY, 125 - heightPercent); // Ensure bottom edge stays within 100%
 
     return (
       <div
         className="fixed pointer-events-none"
         style={{
-          top: `${settings?.position_y ?? "0"}%`,
-          left: `${settings?.position_x ?? "0"}%`,
-          width: `${settings?.width ?? "10"}%`,
-          height: `${settings?.height ?? "7"}%`,
+          top: `${adjustedTop}%`,
+          left: `${adjustedLeft}%`,
+          width: `${widthPercent}%`,
+          height: `${heightPercent}%`,
         }}
       >
         {/* Controls */}
@@ -294,4 +306,25 @@ export default function Overlay() {
       </div>
     );
   }
+
+  // Fallback rendering if settings are not available
+  return (
+    <div className="fixed pointer-events-none top-0 left-0 w-[10%] h-[7%]">
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-4">
+          {activeChallenges.map((challenge) => (
+            <ProgressBar
+              key={challenge.id}
+              title={challenge.title}
+              maxValue={challenge.maxValue}
+              minValue={0}
+              currentValue={challenge.currentValue}
+              endDate={challenge.endDate}
+              className="w-full max-w-lg"
+            />
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
 }

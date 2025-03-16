@@ -1,14 +1,14 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { 
-  User, 
-  Session, 
-  AuthChangeEvent, 
-  SignInWithPasswordCredentials, 
+import { useState, useEffect, createContext, useContext } from "react";
+import {
+  User,
+  Session,
+  AuthChangeEvent,
+  SignInWithPasswordCredentials,
   SignUpWithPasswordCredentials,
-  Provider
-} from '@supabase/supabase-js';
-import { supabase }  from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
+  Provider,
+} from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 type AuthState = {
   user: User | null;
@@ -36,19 +36,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, setState] = useState<AuthState>(initialState);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         if (session) {
-          setState({ 
-            user: session.user, 
-            session, 
-            isLoading: false 
+          setState({
+            user: session.user,
+            session,
+            isLoading: false,
           });
         } else {
-          setState({ 
-            user: null, 
-            session: null, 
-            isLoading: false 
+          setState({
+            user: null,
+            session: null,
+            isLoading: false,
           });
         }
       }
@@ -56,10 +58,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ 
-        user: session?.user || null, 
-        session, 
-        isLoading: false 
+      setState({
+        user: session?.user || null,
+        session,
+        isLoading: false,
       });
     });
 
@@ -68,78 +70,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signIn = async (credentials: SignInWithPasswordCredentials) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword(credentials);
-      if (error) throw error;
-      toast({
-        title: "Successfully signed in",
-        description: "Welcome back to your challenge dashboard",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error signing in",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+  const signIn = async (
+    credentials: SignInWithPasswordCredentials
+  ): Promise<void> => {
+    await toast.promise(
+      (async () => {
+        const { error } = await supabase.auth.signInWithPassword(credentials);
+        if (error) throw error;
+      })(),
+      {
+        loading: "Signing in...",
+        success:
+          "Successfully signed in. Welcome back to your challenge dashboard!",
+        error: (error) => `Error signing in: ${error.message}`,
+      }
+    );
   };
 
-  const signUp = async (credentials: SignUpWithPasswordCredentials) => {
-    try {
-      const { error } = await supabase.auth.signUp(credentials);
-      if (error) throw error;
-      toast({
-        title: "Account created successfully",
-        description: "Please check your email for verification link",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error creating account",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+  const signUp = async (
+    credentials: SignUpWithPasswordCredentials
+  ): Promise<void> => {
+    await toast.promise(
+      (async () => {
+        const { error } = await supabase.auth.signUp(credentials);
+        if (error) throw error;
+      })(),
+      {
+        loading: "Creating account...",
+        success:
+          "Account created successfully. Please check your email for verification link.",
+        error: (error) => `Error creating account: ${error.message}`,
+      }
+    );
   };
 
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast({
-        title: "Signed out successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const signOut = async (): Promise<void> => {
+    await toast.promise(
+      (async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      })(),
+      {
+        loading: "Signing out...",
+        success: "Signed out successfully.",
+        error: (error) => `Error signing out: ${error.message}`,
+      }
+    );
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+  const signInWithGoogle = async (): Promise<void> => {
+    await toast.promise(
+      (async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
           },
-        },
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Error signing in with Google",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+        });
+        if (error) throw error;
+      })(),
+      {
+        loading: "Signing in with Google...",
+        success: "Successfully signed in with Google.",
+        error: (error) => `Error signing in with Google: ${error.message}`,
+      }
+    );
   };
 
   return (
@@ -161,7 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useSupabaseAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useSupabaseAuth must be used within an AuthProvider');
+    throw new Error("useSupabaseAuth must be used within an AuthProvider");
   }
   return context;
 };
