@@ -42,6 +42,66 @@ export type Database = {
         }
         Relationships: []
       }
+      overlay_settings: {
+        Row: {
+          confetti_enabled: boolean
+          confetti_type: string | null
+          created_at: string
+          css_code: string | null
+          height: number
+          html_template: string | null
+          id: number
+          js_code: string | null
+          position_x: number
+          position_y: number
+          sound_decrement_url: string | null
+          sound_enabled: boolean
+          sound_increment_url: string | null
+          sound_reset_url: string | null
+          updated_at: string
+          user_id: string
+          width: number
+        }
+        Insert: {
+          confetti_enabled?: boolean
+          confetti_type?: string | null
+          created_at?: string
+          css_code?: string | null
+          height?: number
+          html_template?: string | null
+          id?: number
+          js_code?: string | null
+          position_x?: number
+          position_y?: number
+          sound_decrement_url?: string | null
+          sound_enabled?: boolean
+          sound_increment_url?: string | null
+          sound_reset_url?: string | null
+          updated_at?: string
+          user_id: string
+          width?: number
+        }
+        Update: {
+          confetti_enabled?: boolean
+          confetti_type?: string | null
+          created_at?: string
+          css_code?: string | null
+          height?: number
+          html_template?: string | null
+          id?: number
+          js_code?: string | null
+          position_x?: number
+          position_y?: number
+          sound_decrement_url?: string | null
+          sound_enabled?: boolean
+          sound_increment_url?: string | null
+          sound_reset_url?: string | null
+          updated_at?: string
+          user_id?: string
+          width?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
