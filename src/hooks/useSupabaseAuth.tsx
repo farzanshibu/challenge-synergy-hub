@@ -1,13 +1,13 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { 
   User, 
   Session, 
   AuthChangeEvent, 
   SignInWithPasswordCredentials, 
-  SignUpWithPasswordCredentials 
+  SignUpWithPasswordCredentials,
+  Provider
 } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase }  from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 
 type AuthState = {
@@ -20,6 +20,7 @@ type AuthContextType = AuthState & {
   signIn: (credentials: SignInWithPasswordCredentials) => Promise<void>;
   signUp: (credentials: SignUpWithPasswordCredentials) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   isAuthenticated: boolean;
 };
 
@@ -119,6 +120,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error signing in with Google",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -126,6 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signUp,
         signOut,
+        signInWithGoogle,
         isAuthenticated: !!state.user,
       }}
     >
