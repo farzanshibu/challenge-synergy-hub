@@ -31,7 +31,7 @@ export default function Home() {
   if (isLoading || !isAuthenticated) {
     return (
       isModernUI ? (
-        <BackgroundGradientAnimation>
+        <BackgroundGradientAnimation interactive={false}>
           <Navbar />
           <div className="flex-1 flex items-center justify-center">
             <div className="animate-pulse flex flex-col items-center">
@@ -56,7 +56,7 @@ export default function Home() {
 
   return (
     isModernUI ? (
-    <BackgroundGradientAnimation>
+      <BackgroundGradientAnimation interactive={false}>
       <Navbar />
       <main className="flex-1 container mx-auto max-w-4xl p-4 pt-24 md:p-8 md:pt-24">
         <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-zinc-800/5 shadow-xl animate-fade-in">

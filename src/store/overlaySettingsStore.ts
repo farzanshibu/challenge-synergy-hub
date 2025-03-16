@@ -10,107 +10,36 @@ export interface OverlaySettings {
   position_y: number;
   width: number;
   height: number;
-  css_code: string;
-  js_code: string;
-  html_template: string;
+  react_code: string;
   confetti_enabled: boolean;
   sound_enabled: boolean;
-  sound_increment_url: string | null;
-  sound_decrement_url: string | null;
-  sound_reset_url: string | null;
-  confetti_type: string;
+  sound_type: {
+    increment_url: string | null;
+    decrement_url: string | null;
+    reset_url: string | null;
+  } | null;
+  confetti_type: {
+    increment_url: string | null;
+    decrement_url: string | null;
+    reset_url: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
+  challenge_id: number | null;
 }
 
-// Default overlay HTML template with variable placeholders
-const DEFAULT_HTML_TEMPLATE = `
-<div class="overlay-challenge">
-  <div class="challenge-title">{{title}}</div>
-  <div class="challenge-progress">
-    <div class="progress-bar">
-      <div class="progress-fill" style="width: {{progressPercent}}%"></div>
-    </div>
-    <div class="progress-text">{{currentValue}}/{{maxValue}}</div>
-  </div>
-  <div class="challenge-timer" data-show="{{hasEndDate}}">Time left: {{timeLeft}}</div>
-</div>
-`;
-
-// Default CSS
-const DEFAULT_CSS = `
-.overlay-challenge {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 12px;
-  color: white;
-  font-family: 'Arial', sans-serif;
-  max-width: 300px;
-}
-
-.challenge-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.progress-bar {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  height: 12px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.progress-fill {
-  background-color: #ff3e00;
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 14px;
-  text-align: right;
-}
-
-.challenge-timer {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #ccc;
-}
-
-[data-show="false"] {
-  display: none;
-}
-`;
-
-// Default JS
-const DEFAULT_JS = `
-// This code runs when a challenge value changes
-function onChallengeUpdate(challenge) {
-  console.log('Challenge updated:', challenge);
-  // You can add custom animations or logic here
-}
-
-// This fires when a challenge is completed
-function onChallengeComplete(challenge) {
-  console.log('Challenge completed!', challenge);
-  // Custom completion celebration logic
-}
-`;
 
 interface OverlaySettingsState {
   loading: boolean;
   settings: OverlaySettings | null;
   defaultSettings: {
-    html_template: string;
-    css_code: string;
-    js_code: string;
+    react_code: string;
   };
   
   // Actions
   fetchSettings: () => Promise<void>;
   saveSettings: (settings: Partial<OverlaySettings>) => Promise<void>;
+  uploadConfetti: (file: File, type: 'increment' | 'decrement' |'reset') => Promise<string>;
   uploadAudio: (file: File, type: 'increment' | 'decrement' | 'reset') => Promise<string>;
   deleteAudio: (type: 'increment' | 'decrement' | 'reset') => Promise<void>;
   resetToDefaults: () => Promise<void>;
@@ -120,9 +49,7 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
   loading: false,
   settings: null,
   defaultSettings: {
-    html_template: DEFAULT_HTML_TEMPLATE,
-    css_code: DEFAULT_CSS,
-    js_code: DEFAULT_JS,
+    react_code: '',
   },
   
   fetchSettings: async () => {
@@ -246,9 +173,22 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
         
       const publicUrl = urlData.publicUrl;
       
-      // Update the settings with the new URL
-      const settingKey = `sound_${type}_url` as keyof OverlaySettings;
-      await get().saveSettings({ [settingKey]: publicUrl } as Partial<OverlaySettings>);
+      // Get current settings
+      const currentSettings = get().settings;
+      const currentSoundType = currentSettings?.sound_type || {
+        increment_url: null,
+        decrement_url: null,
+        reset_url: null
+      };
+      
+      // Update the sound_type object with the new URL
+      const updatedSoundType = {
+        ...currentSoundType,
+        [`${type}_url`]: publicUrl
+      };
+      
+      // Save the updated sound_type object
+      await get().saveSettings({ sound_type: updatedSoundType });
       
       return publicUrl;
     } catch (error: any) {
@@ -261,7 +201,63 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       throw error;
     }
   },
-  
+uploadConfetti: async (file: File, type: 'increment' | 'decrement' | 'reset') => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+      
+      const userId = session.session.user.id;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${type}_confetti.${fileExt}`;
+      
+      const { data, error } = await supabase
+        .storage
+        .from('overlay_assets')
+        .upload(fileName, file, {
+          upsert: true,
+          contentType: file.type
+        });
+        
+      if (error) throw error;
+      
+      const { data: urlData } = supabase
+        .storage
+        .from('overlay_assets')
+        .getPublicUrl(fileName);
+        
+      const publicUrl = urlData.publicUrl;
+      
+      // Get current settings
+      const currentSettings = get().settings;
+      const currentConfettiType = currentSettings?.confetti_type || {
+        increment_url: null,
+        decrement_url: null,
+        reset_url: null
+      };
+      
+      // Update the confetti_type object with the new URL
+      const updatedConfettiType = {
+        ...currentConfettiType,
+        [`${type}_url`]: publicUrl
+      };
+      
+      // Save the updated confetti_type object
+      await get().saveSettings({ confetti_type: updatedConfettiType });
+      
+      return publicUrl;
+    } catch (error: any) {
+      console.error(`Error uploading ${type} confetti:`, error.message);
+      toast({
+        title: `Error uploading ${type} confetti`,
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  },
+
   deleteAudio: async (type: 'increment' | 'decrement' | 'reset') => {
     try {
       const { data: session } = await supabase.auth.getSession();
@@ -277,7 +273,7 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
       }
       
       // Get the file path from the URL
-      const soundUrl = settings[`sound_${type}_url` as keyof OverlaySettings] as string;
+      const soundUrl = settings.sound_type?.[`${type}_url`] as string | null;
       
       if (soundUrl) {
         // Extract filename from URL
@@ -292,9 +288,20 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
         if (deleteError) throw deleteError;
       }
       
-      // Update settings to remove the URL
-      const settingKey = `sound_${type}_url` as keyof OverlaySettings;
-      await get().saveSettings({ [settingKey]: null } as Partial<OverlaySettings>);
+      // Update the sound_type object to remove the URL
+      const currentSoundType = settings.sound_type || {
+        increment_url: null,
+        decrement_url: null,
+        reset_url: null
+      };
+      
+      const updatedSoundType = {
+        ...currentSoundType,
+        [`${type}_url`]: null
+      };
+      
+      // Save the updated sound_type object
+      await get().saveSettings({ sound_type: updatedSoundType });
       
       toast({
         title: "Sound removed",
@@ -340,10 +347,16 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
             height: 200,
             confetti_enabled: true,
             sound_enabled: true,
-            confetti_type: 'default',
-            sound_increment_url: null,
-            sound_decrement_url: null,
-            sound_reset_url: null,
+            sound_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
+            confetti_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
             updated_at: new Date().toISOString()
           })
           .eq('id', existingSettings.id)
@@ -367,7 +380,16 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
             height: 200,
             confetti_enabled: true,
             sound_enabled: true,
-            confetti_type: 'default',
+            sound_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
+            confetti_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
             user_id: userId
           }])
           .select();

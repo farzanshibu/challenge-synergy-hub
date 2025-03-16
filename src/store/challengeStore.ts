@@ -57,7 +57,7 @@ interface ChallengeState {
   // Actions
   fetchChallenges: () => Promise<void>;
   setActiveChallenge: (challenge: Challenge | null) => void;
-  addChallenge: (challenge: FormValues) => Promise<void>;
+  addChallenge: (challenge: FormValues) => Promise<number | null>;
   updateChallenge: (id: number, data: Partial<Challenge>) => Promise<void>;
   deleteChallenge: (id: number) => Promise<void>;
   incrementChallenge: (id: number) => Promise<void>;
@@ -153,6 +153,9 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
       if (!state.activeChallenge) {
         set({ activeChallenge: newChallenge });
       }
+
+      // Return the new challenge ID
+      return newChallenge.id;
     } catch (error: any) {
       console.error('Error adding challenge:', error.message);
       toast({
@@ -161,6 +164,7 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         variant: "destructive"
       });
       set({ loading: false });
+      return null
     }
   },
   

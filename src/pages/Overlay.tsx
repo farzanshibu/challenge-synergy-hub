@@ -54,19 +54,19 @@ export default function Overlay() {
   
   // Setup audio players when settings load
   useEffect(() => {
-    if (settings && settings.sound_enabled) {
+    if (settings && settings.sound_enabled && settings.sound_type) {
       const players: Record<string, HTMLAudioElement> = {};
       
-      if (settings.sound_increment_url) {
-        players.increment = new Audio(settings.sound_increment_url);
+      if (settings.sound_type.increment_url) {
+        players.increment = new Audio(settings.sound_type.increment_url);
       }
       
-      if (settings.sound_decrement_url) {
-        players.decrement = new Audio(settings.sound_decrement_url);
+      if (settings.sound_type.decrement_url) {
+        players.decrement = new Audio(settings.sound_type.decrement_url);
       }
       
-      if (settings.sound_reset_url) {
-        players.reset = new Audio(settings.sound_reset_url);
+      if (settings.sound_type.reset_url) {
+        players.reset = new Audio(settings.sound_type.reset_url);
       }
       
       setAudioPlayers(players);
@@ -104,7 +104,7 @@ export default function Overlay() {
         if (actionType === 'increment' && 
             settings.confetti_enabled && 
             challenge.currentValue % Math.ceil(challenge.maxValue / 10) === 0) {
-          playConfetti(settings.confetti_type);
+          playConfetti('increment');
         }
       }
     });
@@ -122,63 +122,65 @@ export default function Overlay() {
   }, [challenges, settings, audioPlayers]);
   
   // Play confetti animation
-  const playConfetti = (type: string) => {
+  const playConfetti = (type: 'increment' | 'decrement' | 'reset') => {
+    if (!settings?.confetti_enabled) return;
+
     const defaults = {
       origin: { y: 0.7 },
       zIndex: 1000,
     };
     
+    // Check for custom animation URL in settings
+    if (settings?.confetti_type?.[`${type}_url`]) {
+      confetti({
+        ...defaults,
+        particleCount: type === 'increment' ? 80 : 40,
+        spread: type === 'increment' ? 60 : 45,
+        colors: type === 'reset' ? ['#FF6B6B', '#FF8787', '#FFA8A8'] : undefined
+      });
+      return;
+    }
+
+    // Default animations based on action type
     switch (type) {
-      case 'fireworks':
-        confetti({
-          ...defaults,
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.9 }
-        });
-        setTimeout(() => {
-          confetti({
-            ...defaults,
-            particleCount: 100,
-            spread: 100,
-            origin: { y: 0.8, x: 0.3 }
-          });
-        }, 250);
-        setTimeout(() => {
-          confetti({
-            ...defaults,
-            particleCount: 100,
-            spread: 100,
-            origin: { y: 0.8, x: 0.7 }
-          });
-        }, 400);
-        break;
-        
-      case 'stars':
-        confetti({
-          ...defaults,
-          shapes: ['star'],
-          particleCount: 40,
-          spread: 50,
-          colors: ['FFE400', 'FFBD00', 'E89400', 'FFCA6C', 'FDFFB8']
-        });
-        break;
-        
-      case 'emoji':
-        // Using random emojis would require canvas-confetti-emoji package, using default instead
-        confetti({
-          ...defaults,
-          particleCount: 60,
-          spread: 55,
-        });
-        break;
-        
-      default: // default confetti
+      case 'increment':
         confetti({
           ...defaults,
           particleCount: 80,
-          spread: 60
+          spread: 60,
+          colors: ['#4CAF50', '#8BC34A', '#CDDC39']
         });
+        break;
+
+      case 'decrement':
+        confetti({
+          ...defaults,
+          particleCount: 40,
+          spread: 45,
+          colors: ['#FFA726', '#FFB74D', '#FFCC80'],
+          gravity: 1.2
+        });
+        break;
+
+      case 'reset':
+        confetti({
+          ...defaults,
+          particleCount: 60,
+          spread: 70,
+          colors: ['#FF6B6B', '#FF8787', '#FFA8A8'],
+          gravity: 0.8,
+          ticks: 150
+        });
+        setTimeout(() => {
+          confetti({
+            ...defaults,
+            particleCount: 30,
+            spread: 90,
+            origin: { y: 0.8, x: 0.3 },
+            colors: ['#FF6B6B', '#FF8787', '#FFA8A8']
+          });
+        }, 150);
+        break;
     }
   };
   
@@ -210,106 +212,50 @@ export default function Overlay() {
   
   // Use custom styles if available, otherwise fall back to default
   if (settings) {
-    return (
-      <>
-        {/* Add custom styles */}
-        <style>{settings.css_code}</style>
-        
-        {/* Add custom JS */}
-        {settings.js_code && (
-          <script dangerouslySetInnerHTML={{ __html: settings.js_code }} />
-        )}
-        
-        {/* Info button that shows on hover */}
-        {showControls && (
-          <div className="absolute top-4 right-4 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-xs max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
-            <p className="font-medium">Overlay Controls</p>
-            <p className="text-zinc-400 mt-1">
-              Press <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700 text-xs">Ctrl+H</kbd> to toggle controls visibility.
-            </p>
-          </div>
-        )}
-        
-        {/* Custom styled challenges display */}
-        <div 
-          className="fixed pointer-events-none"
-          style={{ 
-            left: `${settings.position_x}%`, 
-            top: `${settings.position_y}%`,
-            transform: 'translate(-50%, -50%)',
-            maxWidth: `${settings.width}px`,
-            maxHeight: `${settings.height}px`,
-            overflow: 'auto'
-          }}
-        >
-          <div className="space-y-3 pointer-events-auto">
-            {activeChallenges.map((challenge) => {
-              // Calculate variables to replace in template
-              const progressPercent = Math.min(100, Math.round((challenge.currentValue / challenge.maxValue) * 100));
-              
-              let timeLeft = '';
-              if (challenge.endDate) {
-                const timeRemaining = new Date(challenge.endDate).getTime() - Date.now();
-                if (timeRemaining > 0) {
-                  const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
-                  const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  timeLeft = `${days}d ${hours}h`;
-                } else {
-                  timeLeft = 'Expired';
-                }
-              }
-              
-              // Replace variables in template
-              let processedHtml = settings.html_template
-                .replace(/{{title}}/g, challenge.title)
-                .replace(/{{currentValue}}/g, challenge.currentValue.toString())
-                .replace(/{{maxValue}}/g, challenge.maxValue.toString())
-                .replace(/{{progressPercent}}/g, progressPercent.toString())
-                .replace(/{{hasEndDate}}/g, challenge.endDate ? 'true' : 'false')
-                .replace(/{{timeLeft}}/g, timeLeft);
-              
-              return (
-                <div key={challenge.id} dangerouslySetInnerHTML={{ __html: processedHtml }} />
-              );
-            })}
-          </div>
-        </div>
-      </>
-    );
-  }
-  
-  // Fall back to default overlay if no custom settings
+  // Evaluate custom React code if provided
+  const CustomComponent = settings?.react_code ? eval(`(${settings.react_code})`) : null;
+
   return (
-    <div className="fixed top-4 left-4 right-4 pointer-events-none">
-      {/* Info button that shows on hover */}
+    <div 
+      className="fixed pointer-events-none"
+      style={{
+        top: settings?.position_y ?? 0,
+        left: settings?.position_x ?? 0,
+        width: settings?.width ?? '100%',
+        height: settings?.height ?? '100%'
+      }}
+    >
+      {/* Controls */}
       {showControls && (
-        <div className="absolute top-0 right-0 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-xs max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
-          <p className="font-medium">Overlay Controls</p>
-          <p className="text-zinc-400 mt-1">
-            Press <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700 text-xs">Ctrl+H</kbd> to toggle controls visibility.
-          </p>
+        <div className="fixed top-4 left-4 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
+          <p>Press <kbd className="px-2 py-1 bg-zinc-800 rounded">Ctrl + H</kbd> to hide controls</p>
         </div>
       )}
       
-      {/* Challenges display */}
-      <ScrollArea className="max-h-[calc(100vh-32px)]">
-        <div className="space-y-3 max-w-md pointer-events-auto">
-          {activeChallenges.map((challenge) => (
-            <div
-              key={challenge.id}
-              className="p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg backdrop-blur-md shadow-lg overlay-appear"
-            >
+      {/* Active Challenges */}
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-4">
+          {CustomComponent ? (
+            <CustomComponent 
+              challenges={activeChallenges}
+              settings={settings}
+            />
+          ) : (
+            activeChallenges.map(challenge => (
               <ProgressBar
+                key={challenge.id}
                 title={challenge.title}
-                currentValue={challenge.currentValue}
                 maxValue={challenge.maxValue}
+                minValue={0}
+                currentValue={challenge.currentValue}
                 endDate={challenge.endDate}
-                showTitle={true}
+                className="w-full max-w-lg"
               />
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </ScrollArea>
     </div>
   );
+}
 }
