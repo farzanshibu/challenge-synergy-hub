@@ -18,7 +18,8 @@ export const overlaySettingsSchema = z.object({
     decrement_url: z.string().url().nullable(),
     reset_url: z.string().url().nullable()
   }).nullable(),
-  challenge_id: z.number().optional()
+  challenge_id: z.number().optional(),
+  advanced_positioning: z.boolean().default(false),
 });
 
 export type OverlaySettingsFormValues = z.infer<typeof overlaySettingsSchema>;

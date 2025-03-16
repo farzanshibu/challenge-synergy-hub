@@ -100,6 +100,22 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
           .from('overlay_settings')
           .insert([{
             ...get().defaultSettings,
+            position_x: 10,
+            position_y: 10,
+            width: 300,
+            height: 200,
+            confetti_enabled: true,
+            sound_enabled: true,
+            sound_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
+            confetti_type: {
+              increment_url: null,
+              decrement_url: null,
+              reset_url: null
+            },
             ...settings,
             user_id: userId
           }])

@@ -125,6 +125,16 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         throw new Error("Not authenticated");
       }
       
+      // If the new challenge is active, deactivate all other challenges
+      if (challenge.is_active) {
+        const { error: updateError } = await supabase
+          .from('challenges')
+          .update({ is_active: false })
+          .eq('user_id', session.session.user.id);
+          
+        if (updateError) throw updateError;
+      }
+      
       // Convert to DB model before inserting
       const dbChallenge = toDbChallenge(challenge, session.session.user.id);
       
@@ -138,19 +148,26 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
       // Convert back to app model
       const newChallenge = toAppChallenge(data[0] as SupabaseChallenge);
       
-      set(state => ({ 
-        challenges: [newChallenge, ...state.challenges],
-        loading: false 
-      }));
+      set(state => {
+        const updatedChallenges = state.challenges.map(c => 
+          challenge.is_active ? { ...c, is_active: false } : c
+        );
+        
+        return {
+          challenges: [newChallenge, ...updatedChallenges],
+          activeChallenge: challenge.is_active ? newChallenge : state.activeChallenge,
+          loading: false
+        };
+      });
       
       toast({
         title: "Challenge added",
         description: "Your challenge has been created successfully"
       });
       
-      // Set as active challenge if it's the first one
+      // Set as active challenge if it's the first one or if it's active
       const state = get();
-      if (!state.activeChallenge) {
+      if (!state.activeChallenge || newChallenge.is_active) {
         set({ activeChallenge: newChallenge });
       }
 
@@ -171,6 +188,23 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
   updateChallenge: async (id, data) => {
     set({ loading: true });
     try {
+      // Get the current session
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+      
+      // If we're activating this challenge, deactivate all others
+      if (data.is_active === true) {
+        const { error: updateError } = await supabase
+          .from('challenges')
+          .update({ is_active: false })
+          .neq('id', id)
+          .eq('user_id', session.session.user.id);
+          
+        if (updateError) throw updateError;
+      }
+      
       // Convert app model fields to DB model fields
       const dbData: Partial<SupabaseChallenge> = {};
       
@@ -188,15 +222,26 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
       if (error) throw error;
       
       // Update local state - map the changes back to our app model
-      set(state => ({
-        challenges: state.challenges.map(c => 
-          c.id === id ? { ...c, ...data } : c
-        ),
-        activeChallenge: state.activeChallenge?.id === id 
-          ? { ...state.activeChallenge, ...data }
-          : state.activeChallenge,
-        loading: false
-      }));
+      set(state => {
+        // If we're activating this challenge, deactivate all others in local state
+        const updatedChallenges = data.is_active === true
+          ? state.challenges.map(c => 
+              c.id === id ? { ...c, ...data } : { ...c, is_active: false }
+            )
+          : state.challenges.map(c => 
+              c.id === id ? { ...c, ...data } : c
+            );
+            
+        return {
+          challenges: updatedChallenges,
+          activeChallenge: data.is_active === true
+            ? updatedChallenges.find(c => c.id === id) || state.activeChallenge
+            : state.activeChallenge?.id === id
+              ? { ...state.activeChallenge, ...data }
+              : state.activeChallenge,
+          loading: false
+        };
+      });
       
       toast({
         title: "Challenge updated",
