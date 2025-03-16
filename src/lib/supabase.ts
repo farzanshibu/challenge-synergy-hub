@@ -1,8 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = "https://sovzhkfnhjnawqdegmty.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvdnpoa2ZuaGpuYXdxZGVnbXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwOTgwMTksImV4cCI6MjA1NzY3NDAxOX0.XChDB_bBff-mbSA_elGhMPZsD-wz0-blHfwKqn3ILW4";
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase environment variables. Authentication might not work correctly.');
