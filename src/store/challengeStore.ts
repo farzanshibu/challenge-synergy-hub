@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FormValues } from '@/schema/formSchema';
 import { toast } from '@/components/ui/use-toast';
 
+// Interface for the Challenge as used in our application
 export interface Challenge {
   id: number;
   title: string;
@@ -14,6 +15,39 @@ export interface Challenge {
   created_at: string;
   user_id: string;
 }
+
+// Interface matching the Supabase database structure
+interface SupabaseChallenge {
+  id: number;
+  title: string;
+  maxvalue: number;
+  currentvalue: number;
+  enddate: string | null;
+  is_active: boolean;
+  created_at: string;
+  user_id: string;
+}
+
+// Conversion functions between our app model and Supabase model
+const toAppChallenge = (dbChallenge: SupabaseChallenge): Challenge => ({
+  id: dbChallenge.id,
+  title: dbChallenge.title,
+  maxValue: dbChallenge.maxvalue,
+  currentValue: dbChallenge.currentvalue,
+  endDate: dbChallenge.enddate ? new Date(dbChallenge.enddate) : null,
+  is_active: dbChallenge.is_active,
+  created_at: dbChallenge.created_at,
+  user_id: dbChallenge.user_id
+});
+
+const toDbChallenge = (challenge: FormValues, userId: string): Omit<SupabaseChallenge, 'id' | 'created_at'> => ({
+  title: challenge.title,
+  maxvalue: challenge.maxValue,
+  currentvalue: challenge.currentValue,
+  enddate: challenge.endDate ? challenge.endDate.toISOString() : null,
+  is_active: challenge.is_active,
+  user_id: userId
+});
 
 interface ChallengeState {
   loading: boolean;
@@ -55,19 +89,22 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         
       if (error) throw error;
       
+      // Convert from DB model to App model
+      const appChallenges = (data as SupabaseChallenge[]).map(toAppChallenge);
+      
       set({ 
-        challenges: data as Challenge[],
+        challenges: appChallenges,
         loading: false 
       });
       
       // Set the first active challenge if none is selected
       const state = get();
-      if (!state.activeChallenge && data && data.length > 0) {
-        const activeOnes = data.filter(c => c.is_active);
+      if (!state.activeChallenge && appChallenges && appChallenges.length > 0) {
+        const activeOnes = appChallenges.filter(c => c.is_active);
         if (activeOnes.length > 0) {
-          set({ activeChallenge: activeOnes[0] as Challenge });
-        } else if (data.length > 0) {
-          set({ activeChallenge: data[0] as Challenge });
+          set({ activeChallenge: activeOnes[0] });
+        } else if (appChallenges.length > 0) {
+          set({ activeChallenge: appChallenges[0] });
         }
       }
     } catch (error: any) {
@@ -88,14 +125,19 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         throw new Error("Not authenticated");
       }
       
+      // Convert to DB model before inserting
+      const dbChallenge = toDbChallenge(challenge, session.session.user.id);
+      
       const { data, error } = await supabase
         .from('challenges')
-        .insert([{ ...challenge, user_id: session.session.user.id }])
+        .insert([dbChallenge])
         .select();
         
       if (error) throw error;
       
-      const newChallenge = data[0] as Challenge;
+      // Convert back to app model
+      const newChallenge = toAppChallenge(data[0] as SupabaseChallenge);
+      
       set(state => ({ 
         challenges: [newChallenge, ...state.challenges],
         loading: false 
@@ -125,14 +167,23 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
   updateChallenge: async (id, data) => {
     set({ loading: true });
     try {
+      // Convert app model fields to DB model fields
+      const dbData: Partial<SupabaseChallenge> = {};
+      
+      if (data.title !== undefined) dbData.title = data.title;
+      if (data.maxValue !== undefined) dbData.maxvalue = data.maxValue;
+      if (data.currentValue !== undefined) dbData.currentvalue = data.currentValue;
+      if (data.endDate !== undefined) dbData.enddate = data.endDate ? data.endDate.toISOString() : null;
+      if (data.is_active !== undefined) dbData.is_active = data.is_active;
+      
       const { error } = await supabase
         .from('challenges')
-        .update(data)
+        .update(dbData)
         .eq('id', id);
         
       if (error) throw error;
       
-      // Update local state
+      // Update local state - map the changes back to our app model
       set(state => ({
         challenges: state.challenges.map(c => 
           c.id === id ? { ...c, ...data } : c
