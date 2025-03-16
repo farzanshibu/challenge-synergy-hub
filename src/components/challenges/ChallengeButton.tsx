@@ -27,7 +27,7 @@ export default function ChallengeButton() {
   
   if (!activeChallenge) {
     return (
-      <div className="h-[400px] flex items-center justify-center">
+      <div className="h-[600px] flex items-center justify-center">
         <Card className="bg-zinc-800 border-zinc-900 w-full">
           <CardContent className="flex flex-col items-center justify-center py-10 text-center">
             <div className="rounded-full bg-zinc-700/50 p-3 mb-3">

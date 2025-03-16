@@ -1,7 +1,36 @@
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@config '../tailwind.config.ts';
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@utility glassmorphism {
+  @apply bg-black/20 backdrop-blur-lg border border-white/10;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility text-gradient {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-accent to-challenge;
+}
 
 @layer base {
   :root {
@@ -45,20 +74,6 @@
   body {
     @apply bg-zinc-950 text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-  }
-}
-
-@layer utilities {
-  .glassmorphism {
-    @apply bg-black/20 backdrop-blur-lg border border-white/10;
-  }
-  
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-challenge;
   }
 }
 

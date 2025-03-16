@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment
+.env
+.env.production
+.env.local
+
+# Sensitive files
+supabase/config.toml

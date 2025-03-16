@@ -42,7 +42,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       <Navbar />
-      <main className="flex-1 container mx-auto max-w-4xl p-4 pt-20 md:p-8 md:pt-24">
+      <main className="flex-1 container  mx-auto max-w-4xl p-4 pt-20 md:p-8 md:pt-24">
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-xl animate-fade-in">
           <div className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">

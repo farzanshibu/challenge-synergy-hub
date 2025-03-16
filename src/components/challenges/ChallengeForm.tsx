@@ -57,7 +57,7 @@ export default function ChallengeForm() {
   
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="h-[400px] overflow-y-auto">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="h-[600px] overflow-y-auto">
         <Card className="bg-zinc-800 border-zinc-900">
           <CardHeader className="flex justify-between flex-row items-center">
             <CardTitle className="text-zinc-100">Challenge Details</CardTitle>

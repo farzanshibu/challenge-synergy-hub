@@ -1,6 +1,6 @@
 
 import { create } from 'zustand';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { FormValues } from '@/schema/formSchema';
 import { toast } from '@/components/ui/use-toast';
 

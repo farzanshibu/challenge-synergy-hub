@@ -24,7 +24,7 @@ export default function ChallengeList() {
   }, [fetchChallenges, subscribeToChanges]);
   
   return (
-    <ScrollArea className="h-[400px]">
+    <ScrollArea className="h-[600px]">
       <Card className="bg-zinc-800 border-zinc-900">
         <CardHeader className="pb-3">
           <CardTitle className="text-zinc-100 flex items-center justify-between">
