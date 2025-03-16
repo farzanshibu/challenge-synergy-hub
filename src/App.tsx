@@ -10,7 +10,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Overlay from "./pages/Overlay";
-import OverlaySettings from "./pages/OverlaySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -35,7 +34,6 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/home" element={<Home />} />
             <Route path="/overlay" element={<Overlay />} />
-            <Route path="/overlay-settings" element={<OverlaySettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

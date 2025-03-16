@@ -51,7 +51,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: 'YOUR_GOOGLE_CLIENT_ID', // Replace with your actual Google Client ID
+          client_id: import.meta.env.GOOGLE_OAUTH_CLIENT_ID, // Replace with your actual Google Client ID
           callback: handleOneTapSignIn,
           auto_select: true,
         });
