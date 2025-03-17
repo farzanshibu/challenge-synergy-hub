@@ -271,7 +271,7 @@ export default function Overlay() {
       >
         {/* Controls */}
         {showControls && (
-          <div className="fixed top-4 left-4 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
+          <div className="fixed top-4 left-4 p-4 bg-transparent border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
             <p>
               Press{" "}
               <kbd className="px-2 py-1 bg-zinc-800 rounded">Ctrl + H</kbd> to

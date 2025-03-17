@@ -20,6 +20,7 @@ type AuthContextType = AuthState & {
   signIn: (credentials: SignInWithPasswordCredentials) => Promise<void>;
   signUp: (credentials: SignUpWithPasswordCredentials) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithOneTapGoogle: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   isAuthenticated: boolean;
 };
@@ -118,6 +119,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
+  const signInWithOneTapGoogle = async (): Promise<void> => {
+    await toast.promise(
+      (async () => {
+        try {
+          // @ts-ignore - Google One Tap types
+          const response = await window.google.accounts.id.prompt();
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: response.credential,
+            nonce: 'NONCE', // must be the same one as provided in data-nonce
+          });
+          if (error) throw error;
+        } catch (error: any) {
+          throw new Error(error.message || 'Failed to sign in with Google One Tap');
+        }
+      })(),
+      {
+        loading: "Signing in with Google One Tap...",
+        success: "Successfully signed in with Google One Tap.",
+        error: (error) => `Error signing in with Google One Tap: ${error.message}`,
+      }
+    );
+  };
+
   const signInWithGoogle = async (): Promise<void> => {
     await toast.promise(
       (async () => {
@@ -147,6 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signUp,
         signOut,
+        signInWithOneTapGoogle,
         signInWithGoogle,
         isAuthenticated: !!state.user,
       }}

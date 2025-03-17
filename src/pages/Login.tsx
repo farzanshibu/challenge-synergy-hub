@@ -1,20 +1,19 @@
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { AuthForm } from '@/components/auth/AuthForm';
-import { Navbar } from '@/components/layout/Navbar';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { Navbar } from "@/components/layout/Navbar";
 
 export default function Login() {
   const { isAuthenticated } = useSupabaseAuth();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/home');
+      navigate("/home");
     }
   }, [isAuthenticated, navigate]);
-  
+
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       <Navbar />
