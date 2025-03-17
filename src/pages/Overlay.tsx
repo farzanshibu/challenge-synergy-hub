@@ -244,7 +244,7 @@ export default function Overlay() {
     let CustomComponent = null;
     if (settings.react_code) {
       try {
-        CustomComponent = eval(`(${settings.react_code})`);
+        CustomComponent = new Function('return ' + settings.react_code)();
       } catch (error) {
         console.error("Error evaluating react_code:", error);
         // Fallback to default rendering by keeping CustomComponent as null
