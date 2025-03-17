@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,6 +74,29 @@ export function AuthForm({ mode }: AuthFormProps) {
     } catch (error: any) {
       console.error('Error with One Tap sign in:', error);
     }
+  };
+
+  async function handleSignInWithGoogle(response: any) {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: response.credential,
+    });
+    if (error) {
+      console.error('Error with Google sign-in:', error);
+    } else {
+      console.log('Successfully signed in with Google:', data);
+    }
+  }
+
+  const generateNonce = async (): Promise<string[]> => {
+    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
+    const encoder = new TextEncoder();
+    const encodedNonce = encoder.encode(nonce);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encodedNonce);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedNonce = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+    return [nonce, hashedNonce];
   };
 
   const form = useForm<z.infer<typeof authFormSchema>>({
