@@ -62,17 +62,45 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
         throw new Error("Not authenticated");
       }
 
+      // Get all settings for the user
       const { data, error } = await supabase
         .from('overlay_settings')
         .select('*')
-        .eq('user_id', session.session.user.id)
-        .maybeSingle();
+        .eq('user_id', session.session.user.id);
 
       if (error) throw error;
 
-      if (data) {
+      // Find the first active setting or the first setting if none are active
+      const activeChallenge = await supabase
+        .from('challenges')
+        .select('id')
+        .eq('user_id', session.session.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      let settingToUse = null;
+      
+      if (activeChallenge?.data.id) {
+        // Try to find setting for active challenge
+        settingToUse = data.find(setting => setting.challenge_id === activeChallenge.data.id);
+      }
+      
+      // If no setting for active challenge, use the first one or null
+      if (!settingToUse && data.length > 0) {
+        settingToUse = data[0];
+      }
+
+      if (settingToUse) {
+        // Parse confetti_type and sound_type if they are strings
+        if (typeof settingToUse.confetti_type === 'string') {
+          settingToUse.confetti_type = JSON.parse(settingToUse.confetti_type as unknown as string);
+        }
+        if (typeof settingToUse.sound_type === 'string') {
+          settingToUse.sound_type = JSON.parse(settingToUse.sound_type as unknown as string);
+        }
+        
         set({
-          settings: data as OverlaySettings,
+          settings: settingToUse as OverlaySettings,
           loading: false
         });
       } else {
@@ -99,9 +127,20 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>((set, get) =
         .eq('user_id', session.session.user.id);
   
       if (error) throw error;
+      
+      // Parse confetti_type and sound_type if they are strings for all settings
+      const parsedData = data.map(setting => {
+        if (typeof setting.confetti_type === 'string') {
+          setting.confetti_type = JSON.parse(setting.confetti_type as unknown as string);
+        }
+        if (typeof setting.sound_type === 'string') {
+          setting.sound_type = JSON.parse(setting.sound_type as unknown as string);
+        }
+        return setting;
+      });
   
       set({ loading: false });
-      return data;
+      return parsedData;
     } catch (error: any) {
       console.error('Error fetching overlay settings:', error.message);
       set({ loading: false });

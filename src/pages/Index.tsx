@@ -4,48 +4,76 @@ import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { supabase } from "@/lib/supabase";
+interface CredentialResponse {
+  credential: string;
+  select_by: string;
+}
 
 export default function Index() {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate("/home");
-    }
-  }, [isAuthenticated, isLoading, navigate]);
+  // generate nonce to use for google id token sign-in
+  const generateNonce = async (): Promise<string[]> => {
+    const nonce = btoa(
+      String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))
+    );
+    const encoder = new TextEncoder();
+    const encodedNonce = encoder.encode(nonce);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encodedNonce);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedNonce = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
 
-  async function handleSignInWithGoogle(response: any) {
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      token: response.credential,
-      nonce: "NONCE", // must be the same one as provided in data-nonce (if any)
-      provider: "google",
-    });
-    if (error) {
-      console.error(error);
-    } else {
-      console.log(data);
-      redirect("/home");
-    }
-  }
-
+    return [nonce, hashedNonce];
+  };
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      // @ts-expect-error
-      window.google.accounts.id.initialize({
+    const handleGoogleOneTap = async () => {
+      const [nonce, hashedNonce] = await generateNonce();
+      console.log("Nonce: ", nonce, hashedNonce);
+
+      if (!isLoading && isAuthenticated) {
+        navigate("/home");
+        return;
+      }
+
+      (window as any).google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
-        callback: handleSignInWithGoogle,
+        callback: async (response: CredentialResponse) => {
+          try {
+            // send id token returned in response.credential to supabase
+            const { data, error } = await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: response.credential,
+              nonce,
+            });
+
+            if (error) throw error;
+            console.log("Session data: ", data);
+            console.log("Successfully logged in with Google One Tap");
+
+            // redirect to protected page
+            navigate("/");
+          } catch (error) {
+            console.error("Error logging in with Google One Tap", error);
+          }
+        },
+        nonce: hashedNonce,
+        use_fedcm_for_prompt: true,
       });
-      // @ts-expect-error
-      window.google.accounts.id.prompt();
+
+      (window as any).google.accounts.id.prompt();
     };
 
-    document.body.appendChild(script);
-  }, []);
+    // Wait for the Google library to load
+    if (document.readyState === "complete") {
+      handleGoogleOneTap();
+    } else {
+      window.addEventListener("load", handleGoogleOneTap);
+      return () => window.removeEventListener("load", handleGoogleOneTap);
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">

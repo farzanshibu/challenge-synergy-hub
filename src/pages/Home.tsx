@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import ChallengeButton from "@/components/challenges/ChallengeButton";
 import ChallengeList from "@/components/challenges/ChallengeList";
@@ -8,43 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAppSettings } from "@/store/appSettingStore";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
-import { toast } from "sonner";
 export default function Home() {
-  const { isAuthenticated, isLoading } = useSupabaseAuth();
   const { isModernUI } = useAppSettings();
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast("Please sign in to access this page");
-      navigate("/login");
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
-  if (isLoading || !isAuthenticated) {
-    return isModernUI ? (
-      <BackgroundGradientAnimation interactive={false}>
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
-            <div className="h-4 w-32 rounded bg-zinc-800"></div>
-          </div>
-        </div>
-      </BackgroundGradientAnimation>
-    ) : (
-      <div className="min-h-screen bg-zinc-950 flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-zinc-800 mb-4"></div>
-            <div className="h-4 w-32 rounded bg-zinc-800"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return isModernUI ? (
     <BackgroundGradientAnimation interactive={false}>

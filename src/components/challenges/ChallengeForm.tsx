@@ -961,7 +961,7 @@ export default function ChallengeForm() {
                                 <Info className="h-4 w-4 text-zinc-400" />
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-zinc-900 border-zinc-700">
+                            <PopoverContent className="w-80 h-60 overflow-scroll bg-zinc-900 border-zinc-700">
                               <div className="space-y-2">
                                 <h4 className="font-medium text-zinc-100">
                                   Available Variables
@@ -984,13 +984,154 @@ export default function ChallengeForm() {
                                   Example:
                                 </p>
                                 <pre className="bg-zinc-800 p-2 rounded text-sm text-zinc-300 overflow-scroll">
-                                  {`return (
-  <div>
-    <h2>{challenge.title}</h2>
-    <p>Progress: {challenge.currentValue} / {challenge.maxValue}</p>
-    <p>Ends: {challenge.endDate.toLocaleDateString()}</p>
-  </div>
-);`}
+                                  {`
+// Custom component for challenge display
+const CustomComponent = ({ challenges, settings }) => {
+  // Helper function to determine color based on progress
+  const getProgressColor = (current, max) => {
+    const percent = (current / max) * 100;
+    if (percent < 30) return "#ef4444"; // Red
+    if (percent < 70) return "#f59e0b"; // Amber
+    return "#10b981"; // Green
+  };
+
+  // Calculate time remaining
+  const getTimeRemaining = (endDate) => {
+    if (!endDate) return null;
+    
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = end - now;
+    
+    if (diff <= 0) return "Expired";
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) return \`\${days}d \${hours}h\`;
+    
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return \`\${hours}h \${minutes}m\`;
+  };
+
+  // Custom styling options from settings
+  const theme = settings?.theme || "dark";
+  const primaryColor = settings?.primary_color || "#3b82f6";
+  const accentColor = settings?.accent_color || "#10b981";
+
+  // Base theme styles
+  const baseStyles = {
+    dark: {
+      background: "rgba(24, 24, 27, 0.85)",
+      text: "#ffffff", 
+      subtext: "#a1a1aa",
+      border: "#3f3f46",
+    },
+    light: {
+      background: "rgba(250, 250, 250, 0.85)",
+      text: "#18181b",
+      subtext: "#71717a", 
+      border: "#e4e4e7",
+    },
+  };
+  
+  const styles = baseStyles[theme];
+
+  return (
+    <div style={{
+      fontFamily: "monospace",
+      height: "100%", 
+      overflow: "auto",
+      padding: "8px",
+      backdropFilter: "blur(8px)"
+    }}>
+      {challenges.length === 0 ? (
+        <div style={{
+          padding: "12px",
+          borderRadius: "8px", 
+          background: styles.background,
+          color: styles.text,
+          border: \`1px solid \${styles.border}\`,
+          textAlign: "center",
+          fontFamily: "monospace"
+        }}>
+          No active challenges
+        </div>
+      ) : (
+        challenges.map((challenge) => {
+          const progressColor = getProgressColor(challenge.currentValue, challenge.maxValue);
+          const percent = Math.min(100, Math.round((challenge.currentValue / challenge.maxValue) * 100));
+          const timeLeft = getTimeRemaining(challenge.endDate);
+          
+          return (
+            <div key={challenge.id} style={{
+              marginBottom: "12px",
+              padding: "12px",
+              borderRadius: "8px",
+              background: styles.background,
+              border: \`1px solid \${styles.border}\`,
+              color: styles.text,
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+              fontFamily: "monospace"
+            }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px"
+              }}>
+                <div style={{ fontWeight: "600", fontFamily: "monospace" }}>{challenge.title}</div>
+                {timeLeft && (
+                  <div style={{
+                    fontSize: "12px",
+                    color: styles.subtext,
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    background: theme === "dark" ? "rgba(63, 63, 70, 0.5)" : "rgba(228, 228, 231, 0.5)",
+                    fontFamily: "monospace"
+                  }}>
+                    {timeLeft}
+                  </div>
+                )}
+              </div>
+              
+              <div style={{
+                position: "relative",
+                height: "8px",
+                borderRadius: "4px",
+                background: theme === "dark" ? "rgba(63, 63, 70, 0.5)" : "rgba(228, 228, 231, 0.5)",
+                overflow: "hidden",
+                marginBottom: "8px"
+              }}>
+                <div style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  height: "100%",
+                  width: \`\${percent}%\`,
+                  backgroundColor: progressColor,
+                  transition: "width 0.5s ease-out"
+                }}></div>
+              </div>
+              
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between", 
+                fontSize: "12px",
+                color: styles.subtext,
+                fontFamily: "monospace"
+              }}>
+                <div>{challenge.currentValue} / {challenge.maxValue}</div>
+                <div>{percent}%</div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+`}
                                 </pre>
                               </div>
                             </PopoverContent>

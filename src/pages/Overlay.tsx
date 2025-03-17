@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useChallengeStore } from "@/store/challengeStore";
 import {
@@ -9,7 +9,106 @@ import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import ProgressBar from "@/components/challenges/ProgressBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import confetti from "canvas-confetti";
+import React from "react";
 
+// ErrorBoundary Component to handle errors gracefully
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ color: "red" }}>Error: {this.state.error.message}</div>
+      );
+    }
+    return (this.props as { children: React.ReactNode }).children;
+  }
+}
+
+// IframeSandbox Component for Secure Custom React Code Execution
+const IframeSandbox = ({ code, data }) => {
+  const iframeRef = useRef(null);
+
+  useEffect(() => {
+    if (!iframeRef.current) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+          <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = {
+              theme: {
+                extend: {
+                  colors: {
+                    zinc: {
+                      700: '#3f3f46',
+                      800: '#27272a',
+                      900: '#18181b'
+                    }
+                  },
+                  animation: {
+                    'fade-in': 'fadeIn 0.3s ease-in-out'
+                  },
+                  keyframes: {
+                    fadeIn: {
+                      '0%': { opacity: '0' },
+                      '100%': { opacity: '1' }
+                    }
+                  }
+                }
+              }
+            }
+          </script>
+          <style>
+            body { margin: 0; padding: 0; font-family: sans-serif; }
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="text/babel">
+            try {
+              window.sandboxData = ${JSON.stringify(data)};
+              ${code}
+              ReactDOM.render(
+                React.createElement(CustomComponent, window.sandboxData),
+                document.getElementById('root')
+              );
+            } catch (error) {
+              console.error('Error in custom component:', error);
+              document.getElementById('root').innerHTML = '<div style="color: red;">Error: ' + error.message + '</div>';
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    const iframe = iframeRef.current;
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+  }, [code, data]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      sandbox="allow-scripts allow-same-origin"
+      style={{ border: "none", width: "100%", height: "100%" }}
+      title="Sandboxed Custom Component"
+    />
+  );
+};
+
+// Main Overlay Component
 export default function Overlay() {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
   const { challenges, fetchChallenges, subscribeToChanges } =
@@ -24,16 +123,18 @@ export default function Overlay() {
     Record<string, HTMLAudioElement>
   >({});
 
-  // Get active challenges
   const activeChallenges = challenges.filter((c) => c.is_active);
 
-  // Initial load for challenges and settings, and subscribe to challenge updates
+  // Fetch Challenges and Settings on Authentication
   useEffect(() => {
     if (isAuthenticated) {
       fetchChallenges();
       fetchSettings();
     }
+  }, [isAuthenticated, fetchChallenges, fetchSettings]);
 
+  // Subscribe to Challenge Changes
+  useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     if (isAuthenticated) {
       unsubscribe = subscribeToChanges();
@@ -41,9 +142,9 @@ export default function Overlay() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [isAuthenticated, fetchChallenges, fetchSettings, subscribeToChanges]);
+  }, [isAuthenticated, subscribeToChanges]);
 
-  // Subscribe to overlay settings changes for realtime updates
+  // Subscribe to Overlay Settings Changes
   useEffect(() => {
     let unsubscribeOverlay: (() => void) | undefined;
     if (isAuthenticated) {
@@ -54,7 +155,7 @@ export default function Overlay() {
     };
   }, [isAuthenticated, subscribeToOverlayChanges]);
 
-  // Toggle controls visibility on key press
+  // Toggle Controls Visibility with Ctrl + H
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "h") {
@@ -67,11 +168,10 @@ export default function Overlay() {
     };
   }, []);
 
-  // Setup audio players when settings load
+  // Setup Audio Players Based on Settings
   useEffect(() => {
     if (settings && settings.sound_enabled && settings.sound_type) {
       const players: Record<string, HTMLAudioElement> = {};
-
       if (settings.sound_type.increment_url) {
         players.increment = new Audio(settings.sound_type.increment_url);
       }
@@ -85,6 +185,7 @@ export default function Overlay() {
     }
   }, [settings]);
 
+  // Handle Confetti and Sound Effects on Challenge Updates
   useEffect(() => {
     if (!settings || challenges.length === 0) return;
 
@@ -134,7 +235,6 @@ export default function Overlay() {
       }
     }
 
-    // Check for differences before updating previousValues
     const isEqual =
       Object.keys(updatedValues).length ===
         Object.keys(previousValues).length &&
@@ -147,23 +247,14 @@ export default function Overlay() {
     }
   }, [challenges, settings, audioPlayers, previousValues]);
 
-  // Play confetti animation
-  const playConfetti = (type: "increment" | "decrement" | "reset") => {
+  // Confetti Animation Function
+  const playConfetti = (type) => {
     if (!settings?.confetti_enabled) return;
 
     const defaults = {
       origin: { y: 0.7 },
       zIndex: 1000,
     };
-
-    if (settings?.confetti_type?.[`${type}_url`]) {
-      confetti({
-        ...defaults,
-        particleCount: type === "increment" ? 60 : 40,
-        spread: type === "increment" ? 55 : 45,
-      });
-      return;
-    }
 
     switch (type) {
       case "increment":
@@ -209,21 +300,9 @@ export default function Overlay() {
     }
   };
 
-  // If loading, show nothing (transparent overlay)
-  if (isLoading) {
-    return null;
-  }
+  // Render Logic
+  if (isLoading) return null;
 
-  // If not authenticated, show message
-  if (!isAuthenticated) {
-    return (
-      <div className="fixed top-4 left-4 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md">
-        <p>Please log in to view your challenges overlay.</p>
-      </div>
-    );
-  }
-
-  // If no active challenges, show message (only if controls are shown)
   if (activeChallenges.length === 0) {
     return showControls ? (
       <div className="fixed top-4 left-4 p-4 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md">
@@ -239,25 +318,14 @@ export default function Overlay() {
     ) : null;
   }
 
-  // Use custom styles if available, with custom React code or default rendering
   if (settings) {
-    let CustomComponent = null;
-    if (settings.react_code) {
-      try {
-        CustomComponent = new Function('return ' + settings.react_code)();
-      } catch (error) {
-        console.error("Error evaluating react_code:", error);
-        // Fallback to default rendering by keeping CustomComponent as null
-      }
-    }
-
     const widthPercent = settings?.width ?? 10;
     const heightPercent = settings?.height ?? 7;
     const posX = settings?.position_x ?? 0;
     const posY = settings?.position_y ?? 0;
 
-    const adjustedLeft = Math.min(posX, 115 - widthPercent); // Ensure right edge stays within 100%
-    const adjustedTop = Math.min(posY, 125 - heightPercent); // Ensure bottom edge stays within 100%
+    const adjustedLeft = Math.min(posX, 100 - widthPercent);
+    const adjustedTop = Math.min(posY, 100 - heightPercent);
 
     return (
       <div
@@ -269,7 +337,6 @@ export default function Overlay() {
           height: `${heightPercent}%`,
         }}
       >
-        {/* Controls */}
         {showControls && (
           <div className="fixed top-4 left-4 p-4 bg-transparent border border-zinc-700 rounded-lg text-white text-sm max-w-xs animate-fade-in backdrop-blur-md pointer-events-auto">
             <p>
@@ -280,14 +347,15 @@ export default function Overlay() {
           </div>
         )}
 
-        {/* Active Challenges */}
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4">
-            {CustomComponent ? (
-              <CustomComponent
-                challenges={activeChallenges}
-                settings={settings}
-              />
+            {settings.react_code ? (
+              <ErrorBoundary>
+                <IframeSandbox
+                  code={settings.react_code}
+                  data={{ challenges: activeChallenges, settings }}
+                />
+              </ErrorBoundary>
             ) : (
               activeChallenges.map((challenge) => (
                 <ProgressBar
@@ -307,7 +375,6 @@ export default function Overlay() {
     );
   }
 
-  // Fallback rendering if settings are not available
   return (
     <div className="fixed pointer-events-none top-0 left-0 w-[10%] h-[7%]">
       <ScrollArea className="h-full">
