@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useOverlaySettingsStore } from "@/store/overlaySettingsStore";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "../ui/switch";
@@ -53,9 +52,6 @@ export default function ActionButton({ id }: ActionButtonProps) {
     }
   };
 
-  const handleSetActive = () => {
-    setActiveChallenge(challenge);
-  };
 
   const handleUpdateOverlay = async (settingsData: any) => {
     // fetch all overlay setting
@@ -92,13 +88,6 @@ export default function ActionButton({ id }: ActionButtonProps) {
           align="end"
           className="w-40 bg-zinc-900 border-zinc-800"
         >
-          <DropdownMenuItem
-            onClick={handleSetActive}
-            className="cursor-pointer"
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            <span>Set Active</span>
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleToggleActive}
             className="cursor-pointer"

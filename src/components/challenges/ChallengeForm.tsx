@@ -204,7 +204,7 @@ export default function ChallengeForm() {
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="0"
                             type="number"
                             {...field}
@@ -231,7 +231,7 @@ export default function ChallengeForm() {
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                            className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="100"
                             type="number"
                             {...field}
