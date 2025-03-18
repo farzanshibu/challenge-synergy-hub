@@ -54,8 +54,8 @@ export default function ChallengeForm() {
     defaultValues: {
       position_x: settings?.position_x ?? 10,
       position_y: settings?.position_y ?? 10,
-      width: settings?.width ?? 20,
-      height: settings?.height ?? 10,
+      width: settings?.width ?? 100,
+      height: settings?.height ?? 100,
       react_code: "",
       confetti_enabled: settings?.confetti_enabled ?? true,
       sound_enabled: settings?.sound_enabled ?? true,
@@ -411,33 +411,9 @@ export default function ChallengeForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <FormLabel className="text-zinc-100">Position</FormLabel>
-                      <FormField
-                        control={overlayForm.control}
-                        name="advanced_positioning"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormLabel className="text-zinc-400 text-sm">
-                              Advanced
-                            </FormLabel>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-rose-500"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+
 
                     <ScaledDraggableBox
-                      miniMapWidth={640}
-                      miniMapHeight={360}
-                      totalWidth={1920}
-                      totalHeight={1080}
                       boxWidth={overlayForm.watch("width")}
                       boxHeight={overlayForm.watch("height")}
                       onPositionChange={(x, y) => {
@@ -637,9 +613,8 @@ export default function ChallengeForm() {
                         const currentTypes =
                           overlayForm.getValues("confetti_type");
                         const newTypes = currentTypes || {};
-                        const newKey = `custom_${
-                          Object.keys(newTypes).length + 1
-                        }`;
+                        const newKey = `custom_${Object.keys(newTypes).length + 1
+                          }`;
 
                         overlayForm.setValue("confetti_type", {
                           ...newTypes,
