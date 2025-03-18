@@ -15,14 +15,14 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 
 const ScaledDraggableBox = ({
   miniMapWidth = 640,
-  miniMapHeight = 360,
+  miniMapHeight = 367,
   totalWidth = 2020,
   totalHeight = 1180,
   boxWidth = 120,
-  boxHeight = 100,
+  boxHeight = 90,
   step = 5,
   onPositionChange = (x: number, y: number) => { },
-}) => {
+}: ScaledDraggableBoxProps) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -30,18 +30,17 @@ const ScaledDraggableBox = ({
 
   const scale = Math.min(miniMapWidth / totalWidth, miniMapHeight / totalHeight);
 
+  // Fix: The clampPosition function needs to account for the scaled box size
   const clampPosition = (x: number, y: number) => {
     return {
-      x: clamp(x, 0, totalWidth - boxWidth), // Ensures max X is 1820
-      y: clamp(y, 0, totalHeight - boxHeight), // Ensures max Y is 980
+      x: clamp(x, 0, totalWidth - boxWidth),
+      y: clamp(y, 0, totalHeight - boxHeight),
     };
   };
 
-
-
-
   useEffect(() => {
-    onPositionChange(position.x + boxWidth, position.y + boxHeight);
+    // Center of the box = position + half of boxWidth/Height
+    onPositionChange(position.x + (boxWidth / 2), position.y + (boxHeight / 2));
   }, [position, boxWidth, boxHeight, onPositionChange]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -83,18 +82,22 @@ const ScaledDraggableBox = ({
     setPosition(clampPosition(x, y));
   };
 
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', () => setIsDragging(false));
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', () => setIsDragging(false));
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
 
   return (
-    <div className="space-y-2 ">
-      <div className="text-sm text-gray-100-700 font-medium">
+    <div className="space-y-2">
+      <div className="text-sm text-gray-700 font-medium">
         Position: X {Math.round(position.x)}, Y {Math.round(position.y)}
       </div>
 
