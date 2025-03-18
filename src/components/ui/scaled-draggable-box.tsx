@@ -97,7 +97,7 @@ const ScaledDraggableBox = ({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm text-gray-700 font-medium">
+      <div className="text-sm text-gray-100 font-medium">
         Position: X {Math.round(position.x)}, Y {Math.round(position.y)}
       </div>
 
