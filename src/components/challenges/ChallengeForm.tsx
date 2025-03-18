@@ -42,6 +42,7 @@ import {
 import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
 import { Textarea } from "../ui/textarea";
+import ScaledDraggableBox from "../ui/scaled-draggable-box";
 
 export default function ChallengeForm() {
   const { loading, addChallenge } = useChallengeStore();
@@ -432,132 +433,18 @@ export default function ChallengeForm() {
                       />
                     </div>
 
-                    {/* Simple 3x3 Grid */}
-                    {!overlayForm.watch("advanced_positioning") && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4">
-                        <div className="grid grid-cols-3 gap-2">
-                          {/* Top Row */}
-                          {[
-                            "top-left",
-                            "top-center",
-                            "top-right",
-                            "middle-left",
-                            "middle-center",
-                            "middle-right",
-                            "bottom-left",
-                            "bottom-center",
-                            "bottom-right",
-                          ].map((position, index) => {
-                            const row = Math.floor(index / 3);
-                            const col = index % 3;
-                            const posX = col === 0 ? 5 : col === 1 ? 50 : 90;
-                            const posY = row === 0 ? 5 : row === 1 ? 50 : 90;
-
-                            // Check if this position is currently selected
-                            const isSelected =
-                              Math.abs(overlayForm.watch("position_x") - posX) <
-                                5 &&
-                              Math.abs(overlayForm.watch("position_y") - posY) <
-                                5;
-
-                            return (
-                              <button
-                                key={position}
-                                type="button"
-                                className={`flex items-center justify-center h-16 rounded-md transition-colors ${
-                                  isSelected
-                                    ? "bg-rose-500/30 border-2 border-rose-500"
-                                    : "bg-zinc-800 hover:bg-zinc-700"
-                                }`}
-                                onClick={() => {
-                                  overlayForm.setValue("position_x", posX);
-                                  overlayForm.setValue("position_y", posY);
-                                }}
-                              >
-                                <div
-                                  className={`w-3 h-3 rounded-full ${
-                                    isSelected ? "bg-rose-500" : "bg-zinc-500"
-                                  }`}
-                                ></div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Advanced positioning */}
-                    {overlayForm.watch("advanced_positioning") && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={overlayForm.control}
-                          name="position_x"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-zinc-100">
-                                X Position
-                              </FormLabel>
-                              <div className="flex flex-col space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-zinc-400 text-sm">
-                                    {field.value}%
-                                  </span>
-                                  <span className="text-zinc-400 text-sm">
-                                    100%
-                                  </span>
-                                </div>
-                                <FormControl>
-                                  <Slider
-                                    min={0}
-                                    max={100}
-                                    step={1}
-                                    value={[field.value]}
-                                    onValueChange={(values) =>
-                                      field.onChange(values[0])
-                                    }
-                                    className="w-full"
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={overlayForm.control}
-                          name="position_y"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-zinc-100">
-                                Y Position
-                              </FormLabel>
-                              <div className="flex flex-col space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-zinc-400 text-sm">
-                                    {field.value}%
-                                  </span>
-                                  <span className="text-zinc-400 text-sm">
-                                    100%
-                                  </span>
-                                </div>
-                                <FormControl>
-                                  <Slider
-                                    min={0}
-                                    max={100}
-                                    step={1}
-                                    value={[field.value]}
-                                    onValueChange={(values) =>
-                                      field.onChange(values[0])
-                                    }
-                                    className="w-full"
-                                  />
-                                </FormControl>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
+                    <ScaledDraggableBox
+                      miniMapWidth={640}
+                      miniMapHeight={360}
+                      totalWidth={1920}
+                      totalHeight={1080}
+                      boxWidth={overlayForm.watch("width")}
+                      boxHeight={overlayForm.watch("height")}
+                      onPositionChange={(x, y) => {
+                        overlayForm.setValue("position_x", x);
+                        overlayForm.setValue("position_y", y);
+                      }}
+                    />
                   </div>
                 </div>
 
