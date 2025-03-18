@@ -42,7 +42,7 @@ import {
 import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
 import { Textarea } from "../ui/textarea";
-import ScaledDraggableBox from "./ScaledDraggableBox";
+import ScaledDraggableBox from "../ui/scaled-draggable-box";
 
 export default function ChallengeForm() {
   const { loading, addChallenge } = useChallengeStore();

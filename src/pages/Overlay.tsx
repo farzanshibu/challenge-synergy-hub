@@ -331,8 +331,8 @@ export default function Overlay() {
       <div
         className="fixed pointer-events-none"
         style={{
-          top: `${adjustedTop}%`,
-          left: `${adjustedLeft}%`,
+          top: `${adjustedTop}px`,
+          left: `${adjustedLeft}px`,
           width: `${widthPercent}%`,
           height: `${heightPercent}%`,
         }}
