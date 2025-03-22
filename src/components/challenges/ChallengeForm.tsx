@@ -69,7 +69,6 @@ export default function ChallengeForm() {
         decrement_url: null,
         reset_url: null,
       },
-      advanced_positioning: false,
     },
   });
 
@@ -411,8 +410,6 @@ export default function ChallengeForm() {
                   </div>
 
                   <div className="space-y-2">
-
-
                     <ScaledDraggableBox
                       boxWidth={overlayForm.watch("width")}
                       boxHeight={overlayForm.watch("height")}
@@ -613,8 +610,9 @@ export default function ChallengeForm() {
                         const currentTypes =
                           overlayForm.getValues("confetti_type");
                         const newTypes = currentTypes || {};
-                        const newKey = `custom_${Object.keys(newTypes).length + 1
-                          }`;
+                        const newKey = `custom_${
+                          Object.keys(newTypes).length + 1
+                        }`;
 
                         overlayForm.setValue("confetti_type", {
                           ...newTypes,
