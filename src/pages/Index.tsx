@@ -33,6 +33,44 @@ export default function Index() {
       const [nonce, hashedNonce] = await generateNonce();
       console.log("Nonce: ", nonce, hashedNonce);
 
+      // Add script element programmatically with proper CORS attributes
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = "anonymous";
+      document.body.appendChild(script);
+
+      script.onload = () => {
+        // Move Google One Tap initialization inside script.onload
+        (window as any).google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
+          callback: async (response: CredentialResponse) => {
+            try {
+              // send id token returned in response.credential to supabase
+              const { data, error } = await supabase.auth.signInWithIdToken({
+                provider: "google",
+                token: response.credential,
+                nonce,
+              });
+
+              if (error) throw error;
+              console.log("Session data: ", data);
+              console.log("Successfully logged in with Google One Tap");
+
+              // redirect to protected page
+              navigate("/");
+            } catch (error) {
+              console.error("Error logging in with Google One Tap", error);
+            }
+          },
+          nonce: hashedNonce,
+          use_fedcm_for_prompt: true,
+        });
+
+        (window as any).google.accounts.id.prompt();
+      };
+
       if (!isLoading && isAuthenticated) {
         navigate("/home");
         return;

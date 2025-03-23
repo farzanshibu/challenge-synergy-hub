@@ -46,7 +46,7 @@ import ScaledDraggableBox from "../ui/scaled-draggable-box";
 
 export default function ChallengeForm() {
   const { loading, addChallenge } = useChallengeStore();
-  const { settings, saveSettings, uploadAudio, uploadConfetti } =
+  const { settings, addSettings, uploadAudio, uploadConfetti } =
     useOverlaySettingsStore();
 
   const overlayForm = useForm<OverlaySettingsFormValues>({
@@ -132,7 +132,7 @@ export default function ChallengeForm() {
         };
 
         // Save overlay settings
-        await saveSettings(settingsToSave);
+        await addSettings(settingsToSave);
 
         form.reset();
         overlayForm.reset();

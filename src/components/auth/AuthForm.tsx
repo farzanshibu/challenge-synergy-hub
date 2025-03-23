@@ -56,7 +56,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           email: values.email,
           password: values.password,
         });
-        navigate("/home");
+        // navigate("/home");
       } else {
         await signUp({
           email: values.email,

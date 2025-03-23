@@ -319,20 +319,18 @@ export default function Overlay() {
   }
 
   if (settings) {
-    const widthPercent = settings?.width ?? 10;
-    const heightPercent = settings?.height ?? 7;
-    const posX = settings?.position_x ?? 0;
-    const posY = settings?.position_y ?? 0;
-
-    const adjustedLeft = Math.min(posX, 100 - widthPercent);
-    const adjustedTop = Math.min(posY, 100 - heightPercent);
+    console.log(settings);
+    const widthPercent = settings.width;
+    const heightPercent = settings.height;
+    const posX = settings.position_x;
+    const posY = settings.position_y;
 
     return (
       <div
         className="fixed pointer-events-none"
         style={{
-          top: `${adjustedTop}px`,
-          left: `${adjustedLeft}px`,
+          top: `${posY}px`,
+          left: `${posX}px`,
           width: `${widthPercent}%`,
           height: `${heightPercent}%`,
         }}

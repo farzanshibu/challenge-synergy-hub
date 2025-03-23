@@ -12,10 +12,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (
+      !isLoading &&
+      !isAuthenticated &&
+      !location.pathname.includes("/login")
+    ) {
       toast("Please sign in to access this page");
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isLoading]);
 
   if (isLoading) {
     // Return a loading state or null
