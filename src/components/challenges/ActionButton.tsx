@@ -89,6 +89,7 @@ export default function ActionButton({ id }: ActionButtonProps) {
       const overlaySettings = await fetchSettingsAll();
       // Find the overlay for this challenge
       const overlay = overlaySettings.find((s) => s.challenge_id === id);
+      
 
       await saveSettings({
         ...settingsData,
@@ -356,6 +357,12 @@ const OverlaySettingsModal = ({ initialSettings, onSave, isLoading }) => {
           initialX={overlayForm.getValues("position_x")}
           initialY={overlayForm.getValues("position_y")}
           onPositionChange={(x, y) => {
+            
+    console.log(
+      'x,y',
+      x,
+      y
+    );
             overlayForm.setValue("position_x", x);
             overlayForm.setValue("position_y", y);
           }}

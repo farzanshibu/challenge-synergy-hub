@@ -28,7 +28,10 @@ const ScaledDraggableBox = ({
   initialY = 0,
   onPositionChange = (x: number, y: number) => {},
 }: ScaledDraggableBoxProps) => {
-  const [position, setPosition] = useState({ x: initialX, y: initialY });
+  const [position, setPosition] = useState({
+    x: initialX,
+    y: initialY,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,8 +43,8 @@ const ScaledDraggableBox = ({
 
   // Fix: The clampPosition function needs to account for the scaled box size
   const clampPosition = (x: number, y: number) => {
-    const maxX = Math.max(0, 1120-boxWidth  );
-    const maxY = Math.max(0, 820-boxHeight);
+    const maxX = Math.max(0, 1240 - boxWidth);
+    const maxY = Math.max(0, 910 - boxHeight);
     return {
       x: clamp(x, 0, maxX),
       y: clamp(y, 0, maxY),
@@ -50,10 +53,7 @@ const ScaledDraggableBox = ({
 
   useEffect(() => {
     // Center of the box = position + half of boxWidth/Height
-    onPositionChange(
-      Math.round(position.x + boxWidth / 2),
-      Math.round(position.y + boxHeight / 2)
-    );
+    onPositionChange(Math.round(position.x), Math.round(position.y));
   }, [position, boxWidth, boxHeight, onPositionChange]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -133,10 +133,10 @@ const ScaledDraggableBox = ({
         style={{ width: miniMapWidth, height: miniMapHeight }}
       >
         <div
-          className="relative bg-amber-300 overflow-hidden"
+          className="relative bg-stone-950 overflow-hidden"
           style={{
-            width: 1120 * scale,
-            height: 820 * scale,
+            width: 1240 * scale,
+            height: 910 * scale,
           }}
         >
           <div
