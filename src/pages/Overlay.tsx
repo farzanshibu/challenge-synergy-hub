@@ -1,15 +1,11 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
-import { useChallengeStore } from "@/store/challengeStore";
-import {
-  useOverlaySettingsStore,
-  OverlaySettings,
-} from "@/store/overlaySettingsStore";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import ProgressBar from "@/components/challenges/ProgressBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { supabase } from "@/lib/supabase";
+import { useChallengeStore } from "@/store/challengeStore";
+import { useOverlaySettingsStore } from "@/store/overlaySettingsStore";
 import confetti from "canvas-confetti";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // ErrorBoundary Component to handle errors gracefully
 class ErrorBoundary extends React.Component {
@@ -122,38 +118,73 @@ export default function Overlay() {
   const [audioPlayers, setAudioPlayers] = useState<
     Record<string, HTMLAudioElement>
   >({});
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
-  const activeChallenges = challenges.filter((c) => c.is_active);
-
-  // Fetch Challenges and Settings on Authentication
+  // On mount, check for token in URL and set session if present
   useEffect(() => {
-    if (isAuthenticated) {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const encodedAuth = params.get("auth");
+
+      if (encodedAuth) {
+        // Decode the base64 encoded token data
+        const tokenData = JSON.parse(atob(encodedAuth));
+
+        supabase.auth
+          .setSession({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token || "",
+          })
+          .then(() => {
+            console.log("Session set successfully");
+            setIsSessionReady(true);
+          })
+          .catch((error) => {
+            console.error("Error setting session:", error);
+            setIsSessionReady(true);
+          });
+      } else {
+        setIsSessionReady(true);
+      }
+    } catch (error) {
+      console.error("Error processing auth data:", error);
+      setIsSessionReady(true);
+    }
+  }, []);
+
+  // Prevent auth hooks from redirecting or showing "Please sign in" toast on this page
+  // by faking isAuthenticated if token is present or session is ready
+  const isOverlayAccessible = isAuthenticated || isSessionReady;
+
+  // Only fetch data if overlay is accessible
+  useEffect(() => {
+    if (isOverlayAccessible) {
       fetchChallenges();
       fetchSettings();
     }
-  }, [isAuthenticated, fetchChallenges, fetchSettings]);
+  }, [isOverlayAccessible, fetchChallenges, fetchSettings]);
 
   // Subscribe to Challenge Changes
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-    if (isAuthenticated) {
+    if (isOverlayAccessible) {
       unsubscribe = subscribeToChanges();
     }
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [isAuthenticated, subscribeToChanges]);
+  }, [isOverlayAccessible, subscribeToChanges]);
 
   // Subscribe to Overlay Settings Changes
   useEffect(() => {
     let unsubscribeOverlay: (() => void) | undefined;
-    if (isAuthenticated) {
+    if (isOverlayAccessible) {
       unsubscribeOverlay = subscribeToOverlayChanges();
     }
     return () => {
       if (unsubscribeOverlay) unsubscribeOverlay();
     };
-  }, [isAuthenticated, subscribeToOverlayChanges]);
+  }, [isOverlayAccessible, subscribeToOverlayChanges]);
 
   // Toggle Controls Visibility with Ctrl + H
   useEffect(() => {
@@ -300,8 +331,13 @@ export default function Overlay() {
     }
   };
 
+  // Only render after session is ready or authenticated
+  if (!isOverlayAccessible) return null;
+
   // Render Logic
   if (isLoading) return null;
+
+  const activeChallenges = challenges.filter((c) => c.is_active);
 
   if (activeChallenges.length === 0) {
     return showControls ? (

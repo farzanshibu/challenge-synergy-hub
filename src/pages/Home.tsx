@@ -1,14 +1,32 @@
-import { Link } from "react-router-dom";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import ChallengeButton from "@/components/challenges/ChallengeButton";
-import ChallengeList from "@/components/challenges/ChallengeList";
 import ChallengeForm from "@/components/challenges/ChallengeForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ChallengeList from "@/components/challenges/ChallengeList";
 import { Navbar } from "@/components/layout/Navbar";
-import { useAppSettings } from "@/store/appSettingStore";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAppSettings } from "@/store/appSettingStore";
+import { Link } from "react-router-dom";
+
 export default function Home() {
   const { isModernUI } = useAppSettings();
+  const { session } = useSupabaseAuth();
+
+  const buildOverlayUrl = () => {
+    if (!session) return "/overlay";
+
+    // Create a base64 encoded version of the token data
+    const tokenData = JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token || "",
+    });
+
+    const encodedToken = btoa(tokenData);
+    return `/overlay?auth=${encodedToken}`;
+  };
+
+  // Then use this function for your Link component
+  const overlayUrl = buildOverlayUrl();
 
   return isModernUI ? (
     <BackgroundGradientAnimation interactive={false}>
@@ -22,7 +40,7 @@ export default function Home() {
               </h1>
 
               <Link
-                to="/overlay"
+                to={overlayUrl}
                 target="_blank"
                 className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
               >
@@ -94,7 +112,7 @@ export default function Home() {
               </h1>
 
               <Link
-                to="/overlay"
+                to={overlayUrl}
                 target="_blank"
                 className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
               >
