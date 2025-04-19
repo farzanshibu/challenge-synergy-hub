@@ -1,14 +1,3 @@
-import { useState } from "react";
-import { useChallengeStore } from "@/store/challengeStore";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreVertical, Edit, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,15 +8,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useChallengeStore } from "@/store/challengeStore";
+import { Edit, Eye, EyeOff, Loader2, MoreVertical, Trash2 } from "lucide-react";
+import { useState } from "react";
 
-import { useOverlaySettingsStore } from "@/store/overlaySettingsStore";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "../ui/switch";
-import { Slider } from "../ui/slider";
-import { Input } from "@/components/ui/input";
-import ScaledDraggableBox from "../ui/scaled-draggable-box";
 import { toast } from "@/components/ui/use-toast";
+import { overlaySettingsSchema } from "@/schema/overlaySettingsSchema";
+import { useOverlaySettingsStore } from "@/store/overlaySettingsStore";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import ScaledDraggableBox from "../ui/scaled-draggable-box";
+import { Slider } from "../ui/slider";
 
 interface ActionButtonProps {
   id: number;
@@ -42,7 +42,7 @@ export default function ActionButton({ id }: ActionButtonProps) {
   const [isOverlaySettingsOpen, setIsOverlaySettingsOpen] = useState(false);
   const [isOverlaySettingsLoading, setIsOverlaySettingsLoading] =
     useState(false);
-  const [challengeSettings, setChallengeSettings] = useState<any>(null);
+  const [challengeSettings, setChallengeSettings] = useState(null);
   const { saveSettings, fetchSettingsAll } = useOverlaySettingsStore();
   const challenge = challenges.find((c) => c.id === id);
 
@@ -82,14 +82,13 @@ export default function ActionButton({ id }: ActionButtonProps) {
     }
   };
 
-  const handleUpdateOverlay = async (settingsData: any) => {
+  const handleUpdateOverlay = async (settingsData) => {
     try {
       setIsOverlaySettingsLoading(true);
       // fetch all overlay setting
       const overlaySettings = await fetchSettingsAll();
       // Find the overlay for this challenge
       const overlay = overlaySettings.find((s) => s.challenge_id === id);
-      
 
       await saveSettings({
         ...settingsData,
@@ -261,22 +260,35 @@ export default function ActionButton({ id }: ActionButtonProps) {
     </>
   );
 }
+interface OverlaySettingsModalProps {
+  initialSettings;
+  onSave: (data) => Promise<void>;
+  isLoading: boolean;
+}
 
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { overlaySettingsSchema } from "@/schema/overlaySettingsSchema";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 
-const OverlaySettingsModal = ({ initialSettings, onSave, isLoading }) => {
-  const overlayForm = useForm({
+const OverlaySettingsModal = ({
+  initialSettings,
+  onSave,
+  isLoading,
+}: OverlaySettingsModalProps) => {
+  const form = useForm<z.infer<typeof overlaySettingsSchema>>({
     resolver: zodResolver(overlaySettingsSchema),
     defaultValues: {
-      position_x: initialSettings?.position_x ?? 10,
-      position_y: initialSettings?.position_y ?? 10,
-      width: initialSettings?.width ?? 100,
-      height: initialSettings?.height ?? 100,
-      react_code: initialSettings?.react_code ?? "",
-      confetti_enabled: initialSettings?.confetti_enabled ?? true,
-      sound_enabled: initialSettings?.sound_enabled ?? true,
+      position_x: initialSettings?.position_x,
+      position_y: initialSettings?.position_y,
+      width: initialSettings?.width,
+      height: initialSettings?.height,
+      react_code: initialSettings?.react_code,
+      confetti_enabled: initialSettings?.confetti_enabled,
+      sound_enabled: initialSettings?.sound_enabled,
       sound_type: initialSettings?.sound_type ?? {
         increment_url: null,
         decrement_url: null,
@@ -292,97 +304,94 @@ const OverlaySettingsModal = ({ initialSettings, onSave, isLoading }) => {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-zinc-100">Width</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400 text-sm">
-                  {overlayForm.watch("width")}%
-                </span>
-                <span className="text-zinc-400 text-sm">100%</span>
-              </div>
-              <Controller
-                name="width"
-                control={overlayForm.control}
-                render={({ field }) => (
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={10}
-                    value={[field.value]}
-                    onValueChange={(values) => field.onChange(values[0])}
-                    className="w-full"
-                  />
-                )}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-zinc-100">Height</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400 text-sm">
-                  {overlayForm.watch("height")}%
-                </span>
-                <span className="text-zinc-400 text-sm">100%</span>
-              </div>
-              <Controller
-                name="height"
-                control={overlayForm.control}
-                render={({ field }) => (
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={10}
-                    value={[field.value]}
-                    onValueChange={(values) => field.onChange(values[0])}
-                    className="w-full"
-                  />
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <div className="text-sm text-zinc-400 mb-2">
-          Position your overlay by dragging the box below. Use arrow keys for
-          precise positioning.
-        </div>
-        <ScaledDraggableBox
-          // boxWidth={overlayForm.watch("width")}
-          // boxHeight={overlayForm.watch("height")}
-          initialX={overlayForm.getValues("position_x")}
-          initialY={overlayForm.getValues("position_y")}
-          onPositionChange={(x, y) => {
-            
-    console.log(
-      'x,y',
-      x,
-      y
-    );
-            overlayForm.setValue("position_x", x);
-            overlayForm.setValue("position_y", y);
+      <Form {...form}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit((data) => {
+              console.log("Form data:", data);
+              return onSave(data);
+            })();
           }}
-        />
-      </div>
+          className="space-y-6"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="width"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-zinc-100">Width</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Slider
+                        min={1}
+                        max={100}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                        className="bg-zinc-800"
+                      />
+                    </FormControl>
+                    <span className="w-12 text-right text-zinc-100">
+                      {field.value}%
+                    </span>
+                  </div>
+                </FormItem>
+              )}
+            />
 
-      <Button
-        className="mt-4 w-full"
-        onClick={overlayForm.handleSubmit(onSave)}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          "Save Settings"
-        )}
-      </Button>
+            <FormField
+              control={form.control}
+              name="height"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-zinc-100">Height</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Slider
+                        min={1}
+                        max={100}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                        className="bg-zinc-800"
+                      />
+                    </FormControl>
+                    <span className="w-12 text-right text-zinc-100">
+                      {field.value}%
+                    </span>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="mt-4">
+            <ScaledDraggableBox
+              boxWidth={form.watch("width")}
+              boxHeight={form.watch("height")}
+              initialX={form.getValues("position_x")}
+              initialY={form.getValues("position_y")}
+              onPositionChange={(x, y) => {
+                form.setValue("position_x", x);
+                form.setValue("position_y", y);
+              }}
+            />
+          </div>
+
+          <Button type="submit" className="mt-4 w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Settings"
+            )}
+          </Button>
+        </form>
+      </Form>
     </>
   );
 };
