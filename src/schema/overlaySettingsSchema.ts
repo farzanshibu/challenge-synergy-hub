@@ -5,6 +5,7 @@ export const overlaySettingsSchema = z.object({
   position_y: z.number().min(0).default(10),
   width: z.number().min(1).max(100).default(100),
   height: z.number().min(1).max(100).default(100),
+  scale: z.number().min(50).max(200).default(100),
   react_code: z.string().optional(),
   confetti_enabled: z.boolean().default(true),
   sound_enabled: z.boolean().default(true),
