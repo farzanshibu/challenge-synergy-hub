@@ -64,6 +64,16 @@ This project is built with .
 
 Simply open [Lovable](https://lovable.dev/projects/668a2722-5e28-4d8b-a450-f9260e08ef53) and click on Share -> Publish.
 
+## Run with Docker
+
+Build and run the app with Docker Compose:
+
+```sh
+docker compose up --build
+```
+
+Then open: http://localhost:8080
+
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
